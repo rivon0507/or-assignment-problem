@@ -60,7 +60,9 @@ public class Main {
 ## **Features**
 
 ✔ Supports **both cost minimization & productivity maximization**
-✔ Works with **square cost matrices**  
+
+✔ Works with **square cost matrices**
+
 ✔ Simple, intuitive API
 
 ---
