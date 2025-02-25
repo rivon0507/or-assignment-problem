@@ -2,7 +2,7 @@
 
 *A Java library for solving the Assignment Problem using cost minimization or productivity maximization.*
 
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)  
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.md)  
 [![Java](https://img.shields.io/badge/java-21%2B-orange.svg)](https://www.oracle.com/java/)
 
 ## **Overview**
@@ -27,7 +27,7 @@ Under construction.
 
 ### **Manual**
 
-1. Download the latest **JAR** from [Releases](https://github.com/yourusername/assignment-solver/releases).
+1. Download the latest **JAR** from [Releases](https://github.com/rivon0507/assignment-solver/releases).
 2. Add it to your **classpath**.
 
 ---
@@ -67,7 +67,7 @@ public class Main {
 
 ## **License**
 
-This project is licensed under the **MIT License**. See [LICENSE](LICENSE) for details.
+This project is licensed under the **MIT License**. See [LICENSE](LICENSE.md) for details.
 
 ---
 
