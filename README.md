@@ -3,7 +3,7 @@
 *A Java library for solving the Assignment Problem using cost minimization or productivity maximization.*
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)  
-[![Java](https://img.shields.io/badge/java-8%2B-orange.svg)](https://www.oracle.com/java/)
+[![Java](https://img.shields.io/badge/java-21%2B-orange.svg)](https://www.oracle.com/java/)
 
 ## **Overview**
 
