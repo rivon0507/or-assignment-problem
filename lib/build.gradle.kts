@@ -39,7 +39,7 @@ testing {
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(22)
-        targetCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_22
     }
 }
 
