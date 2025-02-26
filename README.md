@@ -42,15 +42,15 @@ import me.rivon0507.or.assignmentproblem.AssignmentSolver;
 public class Main {
     public static void main(String[] args) {
         AssignmentSolver solver = new AssignmentSolver();
-        int[][] costMatrix = {
-                {9, 2, 7},
-                {6, 4, 3},
-                {5, 8, 1}
-        };
-
-        int[] assignment = solver.solve(costMatrix, AssignmentSolver.OptimizationType.MINIMIZE);
-        // To get the optimal value (minimal cost or maximal profit)
-        System.out.println("Optimal value: " + solver.getOptimalValue());
+        int[][] costMatrix = {{9, 2, 7}, {6, 4, 3}, {5, 8, 1}};
+        solver.configure(costMatrix, AssignmentSolver.OptimizationType.MINIMIZE);
+        solver.solve();
+        if (solver.isSolved()) {
+            int[] optimalAssignment = solver.getSolution();
+            for (int i = 0; i < optimalAssignment.length; i++) {
+                System.out.printf("Employee %d is assigned to task %d%n", i, optimalAssignment[i]);
+            } System.out.println("Optimal value: " + solver.getOptimalValue());
+        }
     }
 }
 ```

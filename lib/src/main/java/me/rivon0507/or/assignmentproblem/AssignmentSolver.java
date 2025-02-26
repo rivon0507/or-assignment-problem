@@ -14,19 +14,14 @@ import java.util.stream.Stream;
 /// public class Main {
 ///     public static void main(String[] args) {
 ///         AssignmentSolver solver = new AssignmentSolver();
-///         int[][] costMatrix = {
-///                 {9, 2, 7},
-///                 {6, 4, 3},
-///                 {5, 8, 1}
-///         };
+///         int[][] costMatrix = {{9, 2, 7}, {6, 4, 3}, {5, 8, 1}};
 ///         solver.configure(costMatrix, AssignmentSolver.OptimizationType.MINIMIZE);
-///         solver.solve()
+///         solver.solve();
 ///         if (solver.isSolved()) {
 ///             int[] optimalAssignment = solver.getSolution();
-///             for(int i = 0; i < optimalAssignment.length; i++) {
-///                 System.out.println("Employee %d is assigned to task %d".formatted(i, optimalAssignment[i]))
-///             }
-///             System.out.println("Optimal value: " + solver.getOptimalValue());
+///             for (int i = 0; i < optimalAssignment.length; ++) {
+///                 System.out.printf("Employee %d is assigned to task %d%n", i, optimalAssignment[i]);
+///             } System.out.println("Optimal value: " + solver.getOptimalValue());
 ///         }
 ///     }
 /// }
