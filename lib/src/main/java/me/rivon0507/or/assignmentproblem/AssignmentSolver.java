@@ -6,6 +6,31 @@ import java.util.*;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
+/// The main class of this package. It provides methods to initialize it with the cost matrix, as well as the type of
+/// optimization desired. Basic usage example :
+/// ```java
+/// import me.rivon0507.or.assignmentproblem.AssignmentSolver;
+///
+/// public class Main {
+///     public static void main(String[] args) {
+///         AssignmentSolver solver = new AssignmentSolver();
+///         int[][] costMatrix = {
+///                 {9, 2, 7},
+///                 {6, 4, 3},
+///                 {5, 8, 1}
+///         };
+///         solver.configure(costMatrix, AssignmentSolver.OptimizationType.MINIMIZE);
+///         solver.solve()
+///         if (solver.isSolved()) {
+///             int[] optimalAssignment = solver.getSolution();
+///             for(int i = 0; i < optimalAssignment.length; i++) {
+///                 System.out.println("Employee %d is assigned to task %d".formatted(i, optimalAssignment[i]))
+///             }
+///             System.out.println("Optimal value: " + solver.getOptimalValue());
+///         }
+///     }
+/// }
+/// ```
 @Getter
 public class AssignmentSolver {
     private boolean solved;
@@ -19,6 +44,7 @@ public class AssignmentSolver {
     private final Set<Coord> zeroEncadre = new HashSet<>();
     private final Set<Coord> zeroBarre = new HashSet<>();
 
+    /// The method that launches the computing. It implements the Hungarian algorithm.
     public void solve() {
         if (matrix == null) {
             throw new IllegalStateException("The matrix is null, please set the matrix first");
@@ -138,6 +164,9 @@ public class AssignmentSolver {
         return (rowWithLeastZero != -1 && firstZeroColumn != -1) ? Optional.of(Coord.of(rowWithLeastZero, firstZeroColumn)) : Optional.empty();
     }
 
+    /// Sets up the input of the solver. Reinitializes the old results.
+    /// @param matrix the matrix of costs or of productivity
+    /// @param optimization the type of optimization to be performed
     public void configure(long[][] matrix, OptimizationType optimization) {
         this.matrix = matrix;
         this.optimization = optimization;
@@ -177,8 +206,11 @@ public class AssignmentSolver {
         }
     }
 
+    /// Type of optimization
     public enum OptimizationType {
+        /// Minimization of cost
         MINIMIZE,
+        /// Maximization of profit
         MAXIMIZE,
     }
 }

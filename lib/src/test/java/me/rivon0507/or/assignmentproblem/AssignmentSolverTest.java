@@ -17,7 +17,7 @@ class AssignmentSolverTest {
     private static final String MAXIMIZATION_TEST_CASES_FILE = "test-cases-max.txt";
 
     @TestFactory
-    public Stream<DynamicTest> solveMinCorrecltyComputesOptimalAssignment() {
+    public Stream<DynamicTest> solveMinCorrectlyComputesOptimalAssignment() {
         return getTestCases(MINIMIZATION_TEST_CASES_FILE).stream().map(
                 t -> DynamicTest.dynamicTest("Minimization", () -> {
                     AssignmentSolver solver = new AssignmentSolver();
@@ -32,7 +32,7 @@ class AssignmentSolverTest {
     }
 
     @TestFactory
-    public Stream<DynamicTest> solveMaxCorrecltyComputesOptimalAssignment() {
+    public Stream<DynamicTest> solveMaxCorrectlyComputesOptimalAssignment() {
         return getTestCases(MAXIMIZATION_TEST_CASES_FILE).stream().map(
                 t -> DynamicTest.dynamicTest("Maximization", () -> {
                     AssignmentSolver solver = new AssignmentSolver();
