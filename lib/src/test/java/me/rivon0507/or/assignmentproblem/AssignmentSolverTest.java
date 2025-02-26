@@ -5,21 +5,57 @@ import org.junit.jupiter.api.TestFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
+import java.util.stream.Stream;
 
+import static me.rivon0507.or.assignmentproblem.AssignmentSolver.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class AssignmentSolverTest {
 
-    private static final String TEST_CASES_FILE = "test-cases.txt";
+    private static final String MINIMIZATION_TEST_CASES_FILE = "test-cases-min.txt";
+    private static final String MAXIMIZATION_TEST_CASES_FILE = "test-cases-max.txt";
 
     @TestFactory
-    public Iterable<DynamicTest> solveCorrecltyComputesOptimalAssignment() {
-        List<DynamicTest> tests = new LinkedList<>();
-        try (InputStream resource = Thread.currentThread().getContextClassLoader().getResourceAsStream(TEST_CASES_FILE)) {
+    public Stream<DynamicTest> solveMinCorrecltyComputesOptimalAssignment() {
+        return getTestCases(MINIMIZATION_TEST_CASES_FILE).stream().map(
+                t -> DynamicTest.dynamicTest("Minimization", () -> {
+                    AssignmentSolver solver = new AssignmentSolver();
+                    solver.configure(t.matrix, OptimizationType.MINIMIZE);
+                    solver.solve();
+                    assertAll(
+                            () -> assertArrayEquals(t.expectedSolution, solver.getSolution(), "Wrong solution"),
+                            () -> assertEquals(t.optimalValue, solver.getOptimalValue(), "Wrong minimal value")
+                    );
+                })
+        );
+    }
+
+    @TestFactory
+    public Stream<DynamicTest> solveMaxCorrecltyComputesOptimalAssignment() {
+        return getTestCases(MAXIMIZATION_TEST_CASES_FILE).stream().map(
+                t -> DynamicTest.dynamicTest("Maximization", () -> {
+                    AssignmentSolver solver = new AssignmentSolver();
+                    solver.configure(t.matrix, OptimizationType.MAXIMIZE);
+                    solver.solve();
+                    assertAll(
+                            () -> assertArrayEquals(t.expectedSolution, solver.getSolution(), "Wrong solution"),
+                            () -> assertEquals(t.optimalValue, solver.getOptimalValue(), "Wrong maximal value")
+                    );
+                })
+        );
+    }
+
+    /// Load the test cases from a file. The file consists of the repetition of this pattern :
+    ///
+    /// - The first line is `n` the size of the matrix
+    /// - The `n` first lines represent the matrix's rows, each row consisting or `n` long integers separated by spaces (``)
+    /// - The `n + 1`th line is `n` integers separated by spaces, representing the assignment (the ith employee is assigned
+    /// to the task `row[i]`)
+    /// - The next line is the expected optimal value : the minimum cost or the maximum profit
+    List<TestCase> getTestCases(String fileName) {
+        List<TestCase> testCases = new ArrayList<>();
+        try (InputStream resource = Thread.currentThread().getContextClassLoader().getResourceAsStream(fileName)) {
             assert resource != null;
             Scanner scanner = new Scanner(resource);
             long lineNumber = 0;
@@ -33,7 +69,7 @@ class AssignmentSolverTest {
                                 .mapToLong(Long::parseLong)
                                 .toArray();
                         if (matrix[i].length != matrixSize) {
-                            throw new IllegalStateException("Not enough matrix columns at line %d, expected %d".formatted(lineNumber + 1, matrixSize));
+                            throw new IllegalStateException("%s : Not enough matrix columns at line %d, expected %d".formatted(fileName, lineNumber + 1, matrixSize));
                         }
                     }
                     lineNumber++;
@@ -41,25 +77,24 @@ class AssignmentSolverTest {
                             .mapToLong(Long::parseLong)
                             .toArray();
                     if (expectedSolution.length != matrixSize) {
-                        throw new IllegalStateException("Not enough elements at line %d, expected %d".formatted(lineNumber, matrixSize));
+                        throw new IllegalStateException("%s : Not enough elements at line %d, expected %d".formatted(fileName, lineNumber, matrixSize));
                     }
                     long optimalValue = Long.parseLong(scanner.nextLine());
-                    tests.add(DynamicTest.dynamicTest("Optimal solution", () -> {
-                        AssignmentSolver solver = new AssignmentSolver();
-                        solver.configure(matrix);
-                        solver.solve();
-                        assertAll(
-                                () -> assertArrayEquals(expectedSolution, solver.getSolution(), "Wrong solution"),
-                                () -> assertEquals(optimalValue, solver.getOptimalValue(), "Wrong optimal value")
-                        );
-                    }));
+                    testCases.add(new TestCase(matrix, expectedSolution, optimalValue));
                 } catch (NumberFormatException e) {
-                    throw new NumberFormatException("At %s line %d".formatted(TEST_CASES_FILE, lineNumber));
+                    throw new NumberFormatException("At %s line %d".formatted(fileName, lineNumber));
                 }
             }
-            return tests;
+            return testCases;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    record TestCase(
+            long[][] matrix,
+            long[] expectedSolution,
+            long optimalValue
+    ) {
     }
 }

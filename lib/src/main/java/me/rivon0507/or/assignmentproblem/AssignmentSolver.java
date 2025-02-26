@@ -13,6 +13,7 @@ public class AssignmentSolver {
     private OptimizationType optimization;
     private long[] solution = null;
     private long optimalValue = 0;
+    private long ceiling = 0;
     private final Set<Integer> markedRows = new HashSet<>();
     private final Set<Integer> markedCols = new HashSet<>();
     private final Set<Coord> zeroEncadre = new HashSet<>();
@@ -44,6 +45,9 @@ public class AssignmentSolver {
             addToNonMarkedCellsAndSubtractFromDoublyMarked(min);
         }
         solution = zeroEncadre.stream().sorted(Comparator.comparing(Coord::row)).mapToLong(Coord::col).toArray();
+        if (optimization == OptimizationType.MAXIMIZE) {
+            optimalValue = matrix.length * ceiling - optimalValue;
+        }
         solved = true;
     }
 
@@ -134,13 +138,17 @@ public class AssignmentSolver {
         return (rowWithLeastZero != -1 && firstZeroColumn != -1) ? Optional.of(Coord.of(rowWithLeastZero, firstZeroColumn)) : Optional.empty();
     }
 
-    public void configure(long[][] matrix) {
-        configure(matrix, OptimizationType.MINIMIZE);
-    }
-
     public void configure(long[][] matrix, OptimizationType optimization) {
         this.matrix = matrix;
         this.optimization = optimization;
+        if (this.optimization == OptimizationType.MAXIMIZE) {
+            ceiling = Arrays.stream(matrix).flatMapToLong(Arrays::stream).max().orElseThrow();
+            for (int r = 0; r < matrix.length; r++) {
+                for (int c = 0; c < matrix.length; c++) {
+                    matrix[r][c] = ceiling - matrix[r][c];
+                }
+            }
+        }
         solution = null;
         optimalValue = 0;
         solved = false;
