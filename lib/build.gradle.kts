@@ -10,6 +10,7 @@ plugins {
     // Apply the java-library plugin for API and implementation separation.
     `java-library`
     `maven-publish`
+    id("io.freefair.lombok") version "8.12.1"
 }
 
 repositories {
@@ -23,11 +24,13 @@ dependencies {
 
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.
     implementation(libs.guava)
+    implementation("org.jetbrains:annotations:24.0.0")
 }
 
 testing {
     suites {
         // Configure the built-in test suite
+        @Suppress("UnstableApiUsage")
         val test by getting(JvmTestSuite::class) {
             // Use JUnit Jupiter test framework
             useJUnitJupiter("5.11.1")
@@ -38,8 +41,8 @@ testing {
 // Apply a specific Java toolchain to ease working on different environments.
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(22)
-        targetCompatibility = JavaVersion.VERSION_22
+        languageVersion = JavaLanguageVersion.of(21)
+        targetCompatibility = JavaVersion.VERSION_21
     }
 }
 
