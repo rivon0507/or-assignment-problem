@@ -1,4 +1,4 @@
-package me.rivon0507.or.assignmentproblem;
+package io.github.rivon0507.or.assignmentproblem;
 
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
@@ -8,7 +8,7 @@ import java.io.InputStream;
 import java.util.*;
 import java.util.stream.Stream;
 
-import static me.rivon0507.or.assignmentproblem.AssignmentSolver.*;
+import static io.github.rivon0507.or.assignmentproblem.AssignmentSolver.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class AssignmentSolverTest {
