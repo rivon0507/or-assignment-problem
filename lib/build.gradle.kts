@@ -9,14 +9,16 @@
 plugins {
     // Apply the java-library plugin for API and implementation separation.
     `java-library`
-    `maven-publish`
     id("io.freefair.lombok") version "8.12.1"
+    `maven-publish`
 }
 
 repositories {
     // Use Maven Central for resolving dependencies.
     mavenCentral()
 }
+
+group = "io.github.rivon0507"
 
 dependencies {
     // This dependency is exported to consumers, that is to say found on their compile classpath.
@@ -44,19 +46,47 @@ java {
         languageVersion = JavaLanguageVersion.of(21)
         targetCompatibility = JavaVersion.VERSION_21
     }
+    withJavadocJar()
+    withSourcesJar()
 }
-
-group = "me.rivon0507.or"
-version = "0.1.0-SNAPSHOT"
 
 publishing {
     publications {
         create<MavenPublication>("maven") {
+            groupId = "io.github.rivon0507"
+            artifactId = "or-assignment-problem"
             from(components["java"])
-            artifactId = "assignment-problem"
+
+            pom {
+                name = "or-assignment-problem"
+                description = "A Java library for solving the Assignment Problem using cost minimization or productivity maximization."
+                url = "https://github.com/rivon0507/or-assignment-problem"
+                inceptionYear = "2025"
+                licenses {
+                    license {
+                        name = "The MIT License"
+                        url = "https://opensource.org/licenses/MIT"
+                    }
+                }
+                developers {
+                    developer {
+                        id = "rivon0507"
+                        name = "Flavien TSIRIHERIVONJY"
+                    }
+                }
+                scm {
+                    connection = "scm:git:https://github.com/rivon0507/or-assignment-problem.git"
+                    developerConnection = "scm:git:ssh://github.com/rivon0507/or-assignment-problem.git"
+                    url = "https://github.com/rivon0507/or-assignment-problem"
+                }
+            }
         }
-        repositories {
-            mavenLocal()
+    }
+
+    repositories {
+        mavenLocal()
+        maven {
+            url = uri(layout.buildDirectory.dir("staging-deploy"))
         }
     }
 }

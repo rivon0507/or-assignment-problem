@@ -2,7 +2,7 @@
 
 *A Java library for solving the Assignment Problem using cost minimization or productivity maximization.*
 
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.md)  
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)  
 [![Java](https://img.shields.io/badge/java-21%2B-orange.svg)](https://www.oracle.com/java/)
 
 ## **Overview**
@@ -17,13 +17,50 @@ Algorithm**. It supports both:
 
 ## **Installation**
 
+To include this library in your project, add the following dependency to your build file:
+
 ### **Maven**
 
-Under construction.
+Add the JitPack repository to your `pom.xml`:
+
+```xml
+
+<repositories>
+    <repository>
+        <id>jitpack.io</id>
+        <url>https://jitpack.io</url>
+    </repository>
+</repositories>
+```
+
+Then, add the dependency:
+
+```xml
+
+<dependency>
+    <groupId>io.github.rivon0507</groupId>
+    <artifactId>or-assignment-problem</artifactId>
+    <version>0.1.0</version>
+</dependency>
+```
 
 ### **Gradle**
 
-Under construction.
+Add the JitPack repository to your `build.gradle`:
+
+```groovy
+repositories {
+    maven { url 'https://jitpack.io' }
+}
+```
+
+Then, add the dependency:
+
+```groovy
+dependencies {
+    implementation 'io.github.rivon0507:or-assignment-problem:0.1.0'
+}
+```
 
 ### **Manual**
 
@@ -37,7 +74,7 @@ Under construction.
 ### **Basic Example**
 
 ```java
-import me.rivon0507.or.assignmentproblem.AssignmentSolver;
+import io.github.rivon0507.or.assignmentproblem.AssignmentSolver;
 
 public class Main {
     public static void main(String[] args) {
@@ -49,7 +86,8 @@ public class Main {
             int[] optimalAssignment = solver.getSolution();
             for (int i = 0; i < optimalAssignment.length; i++) {
                 System.out.printf("Employee %d is assigned to task %d%n", i, optimalAssignment[i]);
-            } System.out.println("Optimal value: " + solver.getOptimalValue());
+            }
+            System.out.println("Optimal value: " + solver.getOptimalValue());
         }
     }
 }
@@ -69,7 +107,7 @@ public class Main {
 
 ## **License**
 
-This project is licensed under the **MIT License**. See [LICENSE](LICENSE.md) for details.
+This project is licensed under the **MIT License**. See [LICENSE](LICENSE) for details.
 
 ---
 

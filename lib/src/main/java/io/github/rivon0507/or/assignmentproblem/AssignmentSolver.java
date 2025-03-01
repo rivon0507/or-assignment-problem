@@ -1,4 +1,4 @@
-package me.rivon0507.or.assignmentproblem;
+package io.github.rivon0507.or.assignmentproblem;
 
 import lombok.Getter;
 

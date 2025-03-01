@@ -9,10 +9,10 @@
 /// - Supports both minimization and maximization versions of the problem
 ///
 /// ## Basic Usage
-/// The main class to use is [me.rivon0507.or.assignmentproblem.AssignmentSolver].
+/// The main class to use is [io.github.rivon0507.or.assignmentproblem.AssignmentSolver].
 /// Example:
 /// ```java
-/// import me.rivon0507.or.assignmentproblem.AssignmentSolver;
+/// import io.github.rivon0507.or.assignmentproblem.AssignmentSolver;
 ///
 /// public class Main {
 ///     public static void main(String[] args) {
@@ -24,7 +24,8 @@
 ///             int[] optimalAssignment = solver.getSolution();
 ///             for (int i = 0; i < optimalAssignment.length; ++) {
 ///                 System.out.printf("Employee %d is assigned to task %d%n", i, optimalAssignment[i]);
-///             } System.out.println("Optimal value: " + solver.getOptimalValue());
+///             }
+///             System.out.println("Optimal value: " + solver.getOptimalValue());
 ///         }
 ///     }
 /// }
@@ -33,5 +34,5 @@
 /// - Kuhn, H. W. (1955). "The Hungarian Method for the Assignment Problem".
 /// - Munkres, J. (1957). "Algorithms for the Assignment and Transportation Problems".
 ///
-/// @see me.rivon0507.or.assignmentproblem.AssignmentSolver
-package me.rivon0507.or.assignmentproblem;
+/// @see io.github.rivon0507.or.assignmentproblem.AssignmentSolver
+package io.github.rivon0507.or.assignmentproblem;
