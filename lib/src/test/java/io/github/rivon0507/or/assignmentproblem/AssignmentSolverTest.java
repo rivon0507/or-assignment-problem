@@ -1,6 +1,7 @@
 package io.github.rivon0507.or.assignmentproblem;
 
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 
 import java.io.IOException;
@@ -15,6 +16,81 @@ class AssignmentSolverTest {
 
     private static final String MINIMIZATION_TEST_CASES_FILE = "test-cases-min.txt";
     private static final String MAXIMIZATION_TEST_CASES_FILE = "test-cases-max.txt";
+    private static final TestCase MINIMIZATION_TEST_CASE = new TestCase(
+            new long[][]{
+                    {14, 6, 18, 16, 63, 15},
+                    {41, 78, 44, 73, 70, 25},
+                    {44, 81, 36, 80, 80, 78},
+                    {46, 74, 5, 25, 83, 3},
+                    {72, 32, 55, 51, 3, 81},
+                    {69, 76, 12, 99, 83, 80}
+            },
+            new long[]{1, 5, 0, 3, 4, 2},
+            115
+    );
+
+    @Test
+    void theMatrixShouldBeUnModifiableFromOutside() {
+        AssignmentSolver solver = new AssignmentSolver();
+        long[][] matrix = {
+                {1, 2, 2},
+                {3, 4, 3},
+                {4, 5, 6}
+        };
+        solver.configure(matrix, OptimizationType.MINIMIZE);
+        long[][] originalMatrix = Arrays.stream(matrix).map(x -> Arrays.copyOf(x, x.length)).toArray(long[][]::new);
+        assertAll(
+                () -> {
+                    matrix[0][0] = 1000;
+                    assertArrayEquals(originalMatrix, solver.getMatrix(), "Changes on the original matrix should not reflect on the solver's");
+                },
+                () -> {
+                    solver.getMatrix()[2][1] = 4000;
+                    assertArrayEquals(originalMatrix, solver.getMatrix(), "Changing the matrix obtained through the getter should not reflect on the solver's");
+                }
+        );
+    }
+
+    @Test
+    void theSolutionShouldBeUnModifiableFromOutside() {
+        AssignmentSolver solver = new AssignmentSolver();
+        solver.configure(MINIMIZATION_TEST_CASE.matrix, OptimizationType.MINIMIZE);
+        solver.solve();
+        solver.getSolution()[0] = 5000;
+        assertArrayEquals(MINIMIZATION_TEST_CASE.expectedSolution, solver.getSolution(), "The solution should not be modifiable");
+    }
+
+    @SuppressWarnings("DataFlowIssue")
+    @Test
+    void theMarkedRowsShouldBeUnModifiableView() {
+        AssignmentSolver solver = new AssignmentSolver();
+        Set<Integer> markedRows = solver.getMarkedRows();
+        assertThrows(UnsupportedOperationException.class, () -> markedRows.add(0), "Marked rows should not be modifiable");
+    }
+
+    @SuppressWarnings("DataFlowIssue")
+    @Test
+    void theMarkedColsShouldBeUnModifiableView() {
+        AssignmentSolver solver = new AssignmentSolver();
+        Set<Integer> markedCols = solver.getMarkedCols();
+        assertThrows(UnsupportedOperationException.class, () -> markedCols.add(0), "Marked cols should not be modifiable");
+    }
+
+    @SuppressWarnings("DataFlowIssue")
+    @Test
+    void theZeroEncadreShouldBeUnModifiableView() {
+        AssignmentSolver solver = new AssignmentSolver();
+        Set<Coord> zeroEncadre = solver.getFramedZeroes();
+        assertThrows(UnsupportedOperationException.class, () -> zeroEncadre.add(Coord.of(0, 0)), "Zero encadre should not be modifiable");
+    }
+
+    @SuppressWarnings("DataFlowIssue")
+    @Test
+    void theZeroBarreShouldBeUnModifiableView() {
+        AssignmentSolver solver = new AssignmentSolver();
+        Set<Coord> zeroBarre = solver.getStruckOutZeroes();
+        assertThrows(UnsupportedOperationException.class, () -> zeroBarre.add(Coord.of(0, 0)), "Zero barre should not be modifiable");
+    }
 
     @TestFactory
     public Stream<DynamicTest> solveMinCorrectlyComputesOptimalAssignment() {
