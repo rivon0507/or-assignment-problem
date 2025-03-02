@@ -45,19 +45,7 @@ public class AssignmentSolver {
     private final Set<Coord> framedZeroes = new HashSet<>();
     private final Set<Coord> struckOutZeroes = new HashSet<>();
     private final NotificationHandler notificationHandler = new NotificationHandler();
-    /// A list of column indices where the minimum values were found in each row 
-    /// during the row-wise minimum subtraction step.
-    /// 
-    /// For each row `i`, the minimum value in that row was found at 
-    /// `(i, rowMinCols[i])`, meaning the value at row `i` and column 
-    /// `rowMinCols[i]` was the smallest in that row before subtraction.
     private final List<Integer> rowMinCols = new ArrayList<>();
-    /// A list of row indices where the minimum values were found in each column 
-    /// during the column-wise minimum subtraction step.
-    /// 
-    /// For each column `i`, the minimum value in that column was found at 
-    /// `(colMinRows[i], i)`, meaning the value at row `colMinRows[i]` 
-    /// and column `i` was the smallest in that column before subtraction.
     private final List<Integer> colMinRows = new ArrayList<>();
 
     /// The method that launches the computation. It implements the Hungarian algorithm.
@@ -100,13 +88,32 @@ public class AssignmentSolver {
         state = SOLVED;
     }
 
+    /// Returns a list of column indices where the minimum values were found in each row
+    /// during the row-wise minimum subtraction step.
+    ///
+    /// For each row `i`, the minimum value in that row was found at `(i, rowMinCols[i])`, meaning the value at row `i`
+    ///  and column `rowMinCols[i]` was the smallest in that row before subtraction.
+    @Unmodifiable
+    public List<Integer> getRowMinCols() {
+        return Collections.unmodifiableList(rowMinCols);
+    }
+
+    /// Returns a list of row indices where the minimum values were found in each column
+    /// during the column-wise minimum subtraction step.
+    ///
+    /// For each column `i`, the minimum value in that column was found at `(colMinRows[i], i)`, meaning the value at
+    /// row `colMinRows[i]` and column `i` was the smallest in that column before subtraction.
+    @Unmodifiable
+    public List<Integer> getColMinRows() {
+        return Collections.unmodifiableList(colMinRows);
+    }
+
     /// Returns a copy of the assignment matrix used in the solver.
     ///
     /// The returned matrix represents the current state of the problem,
     /// but modifying it will not affect the solver's internal state.
     /// This method ensures that the internal data remains immutable
     /// from external modifications.
-    ///
     ///
     /// @return a deep copy of the assignment matrix
     public long[][] getMatrix() {
@@ -125,7 +132,6 @@ public class AssignmentSolver {
     /// This method ensures that modifications to the returned array do not
     /// affect the internal state of the solver.
     ///
-    ///
     /// @return a copy of the optimal assignment solution as a `long[]` array
     public long[] getSolution() {
         return Arrays.copyOf(solution, solution.length);
@@ -137,7 +143,6 @@ public class AssignmentSolver {
     /// as part of the optimal assignment calculation. This method
     /// ensures that modifications to the returned set do not affect
     /// the internal state of the solver.
-    ///
     ///
     /// @return an unmodifiable set of marked row indices
     @Unmodifiable
@@ -151,7 +156,6 @@ public class AssignmentSolver {
     /// as part of the optimal assignment calculation. This method
     /// ensures that modifications to the returned set do not affect
     /// the internal state of the solver.
-    ///
     ///
     /// @return an unmodifiable set of marked column indices
     @Unmodifiable

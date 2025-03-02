@@ -244,6 +244,22 @@ class AssignmentSolverTest {
         );
     }
 
+    @SuppressWarnings("DataFlowIssue")
+    @Test
+    void theRowMinColsShouldBeUnModifiableView() {
+        AssignmentSolver solver = new AssignmentSolver();
+        List<Integer> rowMinCols = solver.getRowMinCols();
+        assertThrows(UnsupportedOperationException.class, () -> rowMinCols.add(0), "RowMinCols should not be modifiable");
+    }
+
+    @SuppressWarnings("DataFlowIssue")
+    @Test
+    void theColMinRowsShouldBeUnModifiableView() {
+        AssignmentSolver solver = new AssignmentSolver();
+        List<Integer> colMinRows = solver.getColMinRows();
+        assertThrows(UnsupportedOperationException.class, () -> colMinRows.add(0), "ColMinRows should not be modifiable");
+    }
+
     @TestFactory
     public Stream<DynamicTest> solveMinCorrectlyComputesOptimalAssignment() {
         return getTestCases(MINIMIZATION_TEST_CASES_FILE).stream().map(
