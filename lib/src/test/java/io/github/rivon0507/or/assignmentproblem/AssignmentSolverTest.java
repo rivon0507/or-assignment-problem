@@ -267,7 +267,6 @@ class AssignmentSolverTest {
                     AssignmentSolver solver = new AssignmentSolver();
                     solver.configure(t.matrix, OptimizationType.MINIMIZE);
                     solver.solve();
-                    System.out.println(Arrays.toString(solver.getSolution()));
                     assertAll(
                             () -> assertEquals(AssignmentSolver.SolverState.SOLVED, solver.getState(), "The solver should have solved the problem"),
                             () -> assertArrayEquals(t.expectedSolution, solver.getSolution(), "Wrong solution"),
