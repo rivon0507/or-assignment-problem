@@ -311,7 +311,7 @@ class AssignmentSolverTest {
                     int matrixSize = Integer.parseInt(scanner.nextLine());
                     long[][] matrix = new long[matrixSize][];
                     for (int i = 0; i < matrixSize; i++, lineNumber++) {
-                        matrix[i] = Arrays.stream(scanner.nextLine().split("\\s+"))
+                        matrix[i] = Arrays.stream(scanner.nextLine().trim().split("\\s+"))
                                 .mapToLong(Long::parseLong)
                                 .toArray();
                         if (matrix[i].length != matrixSize) {

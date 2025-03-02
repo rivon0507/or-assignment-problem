@@ -76,7 +76,7 @@ public class AssignmentSolver {
             notificationHandler.notify(LV1_MARK_LINES_AND_COLS, this);
             long min = getMinInNonMarkedCells();
             notificationHandler.notify(LV2_FIND_MIN, this);
-            optimalValue += min;
+            optimalValue += (matrix.length - framedZeroes.size()) * min;
             addToNonMarkedCellsAndSubtractFromDoublyMarked(min);
             notificationHandler.notify(LV2_SUBTRACT_ADD_MIN, this);
             notificationHandler.notify(LV1_FIND_SUBTRACT_ADD_MIN, this);
