@@ -1,12 +1,15 @@
 package io.github.rivon0507.or.assignmentproblem;
 
 import lombok.Getter;
+import org.apiguardian.api.API;
+import org.checkerframework.common.value.qual.StringVal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.*;
-import java.util.stream.LongStream;
-import java.util.stream.Stream;
+
+import static io.github.rivon0507.or.assignmentproblem.AssignmentSolver.SolverState.*;
+import static io.github.rivon0507.or.assignmentproblem.listener.SolverStep.*;
 
 /// The main class of this package. It provides methods to initialize it with the cost matrix, as well as the type of
 /// optimization desired. Basic usage example :
@@ -14,23 +17,24 @@ import java.util.stream.Stream;
 /// import me.rivon0507.or.assignmentproblem.AssignmentSolver;
 ///
 /// public class Main {
-///     public static void main(String[] args) {
+///     public static void main(String[] args){
 ///         AssignmentSolver solver = new AssignmentSolver();
-///         int[][] costMatrix = {{9, 2, 7}, {6, 4, 3}, {5, 8, 1}};
+///         int[][] costMatrix = {{9, 2, 7},{6, 4, 3},{5, 8, 1}};
 ///         solver.configure(costMatrix, AssignmentSolver.OptimizationType.MINIMIZE);
 ///         solver.solve();
-///         if (solver.isSolved()) {
+///         if (solver.isSolved()){
 ///             int[] optimalAssignment = solver.getSolution();
-///             for (int i = 0; i < optimalAssignment.length; ++) {
+///             for (int i = 0; i < optimalAssignment.length; ++){
 ///                 System.out.printf("Employee %d is assigned to task %d%n", i, optimalAssignment[i]);
-///             } System.out.println("Optimal value: " + solver.getOptimalValue());
+///             }
+///             System.out.println("Optimal value: " + solver.getOptimalValue());
 ///         }
 ///     }
-/// }
-/// ```
+///}
+///```
 @Getter
 public class AssignmentSolver {
-    private boolean solved;
+    private SolverState state = UNINITIALIZED;
     private long[][] matrix;
     private OptimizationType optimization;
     private long[] solution = null;
@@ -40,14 +44,19 @@ public class AssignmentSolver {
     private final Set<Integer> markedCols = new HashSet<>();
     private final Set<Coord> framedZeroes = new HashSet<>();
     private final Set<Coord> struckOutZeroes = new HashSet<>();
+    private final NotificationHandler notificationHandler = new NotificationHandler();
+    private final List<Integer> rowMinCols = new ArrayList<>();
+    private final List<Integer> colMinRows = new ArrayList<>();
 
-    /// The method that launches the computing. It implements the Hungarian algorithm.
+    /// The method that launches the computation. It implements the Hungarian algorithm.
     public void solve() {
-        if (matrix == null) {
-            throw new IllegalStateException("The matrix is null, please set the matrix first");
-        }
-        subtractEachColByTheirMinimum();
-        subtractEachRowByTheirMinimum();
+        if (matrix == null) throw new IllegalStateException("The matrix is null, please set the matrix first");
+        if (state == SOLVING) throw new IllegalStateException("The solver is still SOLVING");
+
+        state = SOLVING;
+        subtractEachByMinimum("col");
+        subtractEachByMinimum("row");
+        notificationHandler.notify(LV1_SUBTRACT_MIN, this);
         while (framedZeroes.size() != matrix.length) {
             framedZeroes.clear();
             struckOutZeroes.clear();
@@ -59,19 +68,44 @@ public class AssignmentSolver {
                 int finalR = r;
                 if (framedZeroes.stream().mapToInt(Coord::row).noneMatch(i -> i == finalR)) {
                     if (markedRows.add(r)) {
+                        notificationHandler.notify(LV2_MARK_ROW, this);
                         markColumnsIntersectingWith(r);
                     }
                 }
             }
+            notificationHandler.notify(LV1_MARK_LINES_AND_COLS, this);
             long min = getMinInNonMarkedCells();
+            notificationHandler.notify(LV2_FIND_MIN, this);
             optimalValue += min;
             addToNonMarkedCellsAndSubtractFromDoublyMarked(min);
+            notificationHandler.notify(LV2_SUBTRACT_ADD_MIN, this);
+            notificationHandler.notify(LV1_FIND_SUBTRACT_ADD_MIN, this);
         }
         solution = framedZeroes.stream().sorted(Comparator.comparing(Coord::row)).mapToLong(Coord::col).toArray();
         if (optimization == OptimizationType.MAXIMIZE) {
             optimalValue = matrix.length * ceiling - optimalValue;
         }
-        solved = true;
+        state = SOLVED;
+    }
+
+    /// Returns a list of column indices where the minimum values were found in each row
+    /// during the row-wise minimum subtraction step.
+    ///
+    /// For each row `i`, the minimum value in that row was found at `(i, rowMinCols[i])`, meaning the value at row `i`
+    ///  and column `rowMinCols[i]` was the smallest in that row before subtraction.
+    @Unmodifiable
+    public List<Integer> getRowMinCols() {
+        return Collections.unmodifiableList(rowMinCols);
+    }
+
+    /// Returns a list of row indices where the minimum values were found in each column
+    /// during the column-wise minimum subtraction step.
+    ///
+    /// For each column `i`, the minimum value in that column was found at `(colMinRows[i], i)`, meaning the value at
+    /// row `colMinRows[i]` and column `i` was the smallest in that column before subtraction.
+    @Unmodifiable
+    public List<Integer> getColMinRows() {
+        return Collections.unmodifiableList(colMinRows);
     }
 
     /// Returns a copy of the assignment matrix used in the solver.
@@ -81,10 +115,14 @@ public class AssignmentSolver {
     /// This method ensures that the internal data remains immutable
     /// from external modifications.
     ///
-    ///
     /// @return a deep copy of the assignment matrix
     public long[][] getMatrix() {
         return Arrays.stream(matrix).map(x -> Arrays.copyOf(x, x.length)).toArray(long[][]::new);
+    }
+
+    @API(status = API.Status.STABLE)
+    public boolean isSolved() {
+        return state == SOLVED;
     }
 
     /// Returns a copy of the computed optimal assignment solution.
@@ -93,7 +131,6 @@ public class AssignmentSolver {
     /// to a row, and the value at that index represents the assigned column.
     /// This method ensures that modifications to the returned array do not
     /// affect the internal state of the solver.
-    ///
     ///
     /// @return a copy of the optimal assignment solution as a `long[]` array
     public long[] getSolution() {
@@ -107,7 +144,6 @@ public class AssignmentSolver {
     /// ensures that modifications to the returned set do not affect
     /// the internal state of the solver.
     ///
-    ///
     /// @return an unmodifiable set of marked row indices
     @Unmodifiable
     public Set<Integer> getMarkedRows() {
@@ -120,7 +156,6 @@ public class AssignmentSolver {
     /// as part of the optimal assignment calculation. This method
     /// ensures that modifications to the returned set do not affect
     /// the internal state of the solver.
-    ///
     ///
     /// @return an unmodifiable set of marked column indices
     @Unmodifiable
@@ -194,6 +229,7 @@ public class AssignmentSolver {
         for (int r = 0; r < matrix.length; r++) {
             if (framedZeroes.contains(Coord.of(r, c))) {
                 if (markedRows.add(r)) {
+                    notificationHandler.notify(LV2_MARK_ROW, this);
                     markColumnsIntersectingWith(r);
                 }
             }
@@ -204,6 +240,7 @@ public class AssignmentSolver {
         for (int c = 0; c < matrix.length; c++) {
             if (struckOutZeroes.contains(Coord.of(r, c))) {
                 if (markedCols.add(c)) {
+                    notificationHandler.notify(LV2_MARK_COL, this);
                     markRowsIntersectingWith(c);
                 }
             }
@@ -218,6 +255,7 @@ public class AssignmentSolver {
             }
             Coord coord = optionalCoord.get();
             framedZeroes.add(coord);
+            notificationHandler.notify(LV2_FRAME_ZERO, this);
             for (int r = 0; r < matrix.length; r++) {
                 if (matrix[r][coord.col()] == 0 && r != coord.row()) {
                     struckOutZeroes.add(coord.withRow(r));
@@ -228,7 +266,9 @@ public class AssignmentSolver {
                     struckOutZeroes.add(coord.withCol(c));
                 }
             }
+            notificationHandler.notify(LV2_STRIKE_OUT_ZERO, this);
         }
+        notificationHandler.notify(LV1_MARK_ZEROES, this);
     }
 
     private Optional<Coord> getFirstZeroOfLineWithMinimalZeroes(Set<Coord> zeroEncadre, Set<Coord> zeroBarre) {
@@ -261,6 +301,8 @@ public class AssignmentSolver {
     public void configure(long[] @NotNull [] matrix, OptimizationType optimization) {
         this.matrix = new long[matrix.length][matrix.length];
         this.optimization = optimization;
+        colMinRows.clear();
+        rowMinCols.clear();
         ceiling = Arrays.stream(matrix).flatMapToLong(Arrays::stream).max().orElseThrow();
         for (int r = 0; r < matrix.length; r++) {
             for (int c = 0; c < matrix.length; c++) {
@@ -272,31 +314,36 @@ public class AssignmentSolver {
         }
         solution = null;
         optimalValue = 0;
-        solved = false;
+        state = CONFIGURED;
     }
 
-    private void subtractEachRowByTheirMinimum() {
-        for (int r = 0; r < matrix.length; r++) {
-            long rowMin = LongStream.of(matrix[r]).min().orElseThrow();
-            if (rowMin == 0) continue;
-            optimalValue += rowMin;
-            for (int c = 0; c < matrix.length; c++) {
-                matrix[r][c] -= rowMin;
+    private void subtractEachByMinimum(@StringVal({"row", "col"}) String rowOrCol) {
+        boolean isRow = "row".equals(rowOrCol);
+        for (int i = 0; i < matrix.length; i++) {
+            long minValue = Long.MAX_VALUE;
+            int minIndex = -1;
+            // Find the minimum value in the row/column
+            for (int j = 0; j < matrix.length; j++) {
+                long value = isRow ? matrix[i][j] : matrix[j][i];
+                if (value < minValue) {
+                    minValue = value;
+                    minIndex = j;
+                }
+            }
+            if (isRow) rowMinCols.add(minIndex);
+            else colMinRows.add(minIndex);
+
+            if (minValue == 0) continue;
+            optimalValue += minValue;
+            // Subtract the minimum from the row/column
+            for (int j = 0; j < matrix.length; j++) {
+                if (isRow) matrix[i][j] -= minValue;
+                else matrix[j][i] -= minValue;
             }
         }
+        notificationHandler.notify(isRow ? LV2_SUBTRACT_MIN_ROW : LV2_SUBTRACT_MIN_COL, this);
     }
 
-    private void subtractEachColByTheirMinimum() {
-        for (int c = 0; c < matrix.length; c++) {
-            final int column = c;
-            long columnMin = Stream.of(matrix).mapToLong(r -> r[column]).min().orElseThrow();
-            if (columnMin == 0) continue;
-            optimalValue += columnMin;
-            for (int r = 0; r < matrix.length; r++) {
-                matrix[r][column] -= columnMin;
-            }
-        }
-    }
 
     /// Type of optimization
     public enum OptimizationType {
@@ -304,5 +351,31 @@ public class AssignmentSolver {
         MINIMIZE,
         /// Maximization of profit
         MAXIMIZE,
+    }
+
+    /// Enum representing the various states of the [AssignmentSolver].
+    /// This enum tracks the lifecycle of the solver, including its configuration,
+    /// solving progress, and error handling. The states help in ensuring that the solver
+    /// only executes certain actions in the correct order, preventing unnecessary re-solving
+    /// or improper configurations.
+    ///
+    /// The possible states are as follows:
+    ///
+    ///   - [#UNINITIALIZED]: The solver has not been configured yet. No input matrix has been received.
+    ///   - [#CONFIGURED]: The solver has been configured with a valid input matrix and optimization mode.
+    ///   - [#SOLVING]: The solver is currently in the process of solving the assignment problem.
+    ///   - [#ERROR]: An error occurred during the solver's operation, and it is in an invalid state.
+    ///   - [#SOLVED]: The solver has successfully completed the assignment problem solution.
+    public enum SolverState {
+        /// The solver is in an uninitialized state, meaning no input matrix has been provided yet.
+        UNINITIALIZED,
+        /// The solver has been successfully configured with the input matrix and optimization mode.
+        CONFIGURED,
+        /// The solver is actively solving the assignment problem.
+        SOLVING,
+        /// The solver encountered an error and cannot proceed with solving. The state of the solver is invalid.
+        ERROR,
+        /// The solver has successfully completed and found an optimal solution for the assignment problem.
+        SOLVED
     }
 }

@@ -1,16 +1,22 @@
 package io.github.rivon0507.or.assignmentproblem;
 
+import io.github.rivon0507.or.assignmentproblem.listener.SolverListener;
+import io.github.rivon0507.or.assignmentproblem.listener.SolverStep;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
+import org.junit.jupiter.api.Timeout;
+import org.mockito.Mockito;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 import java.util.stream.Stream;
 
-import static io.github.rivon0507.or.assignmentproblem.AssignmentSolver.*;
+import static io.github.rivon0507.or.assignmentproblem.AssignmentSolver.OptimizationType;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 class AssignmentSolverTest {
 
@@ -92,6 +98,168 @@ class AssignmentSolverTest {
         assertThrows(UnsupportedOperationException.class, () -> zeroBarre.add(Coord.of(0, 0)), "Zero barre should not be modifiable");
     }
 
+    @Test
+    void shouldNotifyLevel1ListenerForLevel1Steps() {
+        SolverListener listener = Mockito.mock(SolverListener.class);
+        doNothing().when(listener).onStepComplete(any(SolverStep.class), any());
+
+        AssignmentSolver solver = new AssignmentSolver();
+        solver.getNotificationHandler().addListener(1, listener);
+        solver.configure(MINIMIZATION_TEST_CASE.matrix, OptimizationType.MINIMIZE);
+        solver.solve();
+
+        verify(listener, atLeastOnce().description("The listener should be called on the level 1 steps"))
+                .onStepComplete(argThat(solverStep -> solverStep.level() == 1), any());
+    }
+
+    @Test
+    void shouldNotifyLevel2ListenerForLevel2Steps() {
+        SolverListener listener = Mockito.mock(SolverListener.class);
+        doNothing().when(listener).onStepComplete(any(SolverStep.class), any());
+        AssignmentSolver solver = new AssignmentSolver();
+        solver.getNotificationHandler().addListener(2, listener);
+        solver.configure(MINIMIZATION_TEST_CASE.matrix, OptimizationType.MINIMIZE);
+        solver.solve();
+
+        verify(listener, atLeastOnce().description("The listener should be called on the level 2 steps"))
+                .onStepComplete(argThat(solverStep -> solverStep.level() == 2), any());
+    }
+
+    @Test
+    void shouldNotifyLevel2ListenerForLevel1Steps() {
+        SolverListener listener = Mockito.mock(SolverListener.class);
+        doNothing().when(listener).onStepComplete(any(SolverStep.class), any());
+        AssignmentSolver solver = new AssignmentSolver();
+        solver.getNotificationHandler().addListener(2, listener);
+        solver.configure(MINIMIZATION_TEST_CASE.matrix, OptimizationType.MINIMIZE);
+        solver.solve();
+
+        verify(listener, atLeastOnce().description("The level 2 listener should be called on the level 1 steps"))
+                .onStepComplete(argThat(solverStep -> solverStep.level() == 1), any());
+    }
+
+    @Test
+    void shouldNotNotifyLevel1ListenerForLevel2Steps() {
+        SolverListener listener = Mockito.mock(SolverListener.class);
+        doNothing().when(listener).onStepComplete(any(SolverStep.class), any());
+        AssignmentSolver solver = new AssignmentSolver();
+        solver.getNotificationHandler().addListener(1, listener);
+        solver.configure(MINIMIZATION_TEST_CASE.matrix, OptimizationType.MINIMIZE);
+        solver.solve();
+
+        verify(listener, never().description("The level 1 listener should not be called on the level 2 steps"))
+                .onStepComplete(argThat(solverStep -> solverStep.level() == 2), any());
+    }
+
+    @Test
+    void shouldNotifyMultipleListeners() {
+        SolverListener lv1Listener1 = Mockito.mock(SolverListener.class);
+        SolverListener lv1Listener2 = Mockito.mock(SolverListener.class);
+        SolverListener lv2Listener = Mockito.mock(SolverListener.class);
+        doNothing().when(lv1Listener1).onStepComplete(any(SolverStep.class), any());
+        doNothing().when(lv1Listener2).onStepComplete(any(SolverStep.class), any());
+        doNothing().when(lv2Listener).onStepComplete(any(SolverStep.class), any());
+
+        AssignmentSolver solver = new AssignmentSolver();
+        solver.getNotificationHandler().addListener(1, lv1Listener1);
+        solver.getNotificationHandler().addListener(1, lv1Listener2);
+        solver.getNotificationHandler().addListener(2, lv2Listener);
+        solver.configure(MINIMIZATION_TEST_CASE.matrix, OptimizationType.MINIMIZE);
+        solver.solve();
+
+        assertAll(
+                "All listeners should be called at least once",
+                () -> verify(lv1Listener1, atLeastOnce().description("Call lv1Listener1"))
+                        .onStepComplete(any(SolverStep.class), any()),
+                () -> verify(lv1Listener2, atLeastOnce().description("Call lv1Listener2"))
+                        .onStepComplete(any(SolverStep.class), any()),
+                () -> verify(lv2Listener, atLeastOnce().description("Call lv2Listener"))
+                        .onStepComplete(any(SolverStep.class), any())
+        );
+    }
+
+    @Test
+    @Timeout(10)
+    void shouldPreventInfiniteRecursionOfSolve() {
+        AssignmentSolver solver = new AssignmentSolver();
+        final int[] recursionLevels = new int[]{0};
+        SolverListener listener = (step, s) -> {
+            recursionLevels[0]++;
+            s.solve();
+        };
+        solver.getNotificationHandler().addListener(1, listener);
+        solver.configure(MINIMIZATION_TEST_CASE.matrix, OptimizationType.MINIMIZE);
+        assertAll(
+                "There should be no infinite recursion",
+                () -> assertThrows(IllegalStateException.class, solver::solve, "The recursive call to solve() should be prevented"),
+                () -> assertEquals(1, recursionLevels[0], "The recursion level should be 1: only one call to solve() in the call stack")
+        );
+    }
+
+    @Test
+    void rowMinCoordsTests() {
+        AssignmentSolver solver = new AssignmentSolver();
+        solver.getNotificationHandler().addListener(
+                2,
+                (step, s) -> {
+                    if (step == SolverStep.LV2_SUBTRACT_MIN_ROW) {
+                        assertEquals(MINIMIZATION_TEST_CASE.matrix.length, solver.getRowMinCols().size(), "The row coords should not be empty after the subtract row step");
+                    }
+                }
+        );
+        assertAll(
+                () -> assertEquals(0, solver.getRowMinCols().size(), "The row coords should be empty before configuration"),
+                () -> solver.configure(MINIMIZATION_TEST_CASE.matrix, OptimizationType.MINIMIZE),
+                () -> assertEquals(0, solver.getRowMinCols().size(), "The row coords should be empty before solving"),
+                solver::solve,
+                () -> assertEquals(MINIMIZATION_TEST_CASE.matrix.length, solver.getRowMinCols().size(), "The row coords should not be empty after solving"),
+                () -> {
+                    solver.configure(MINIMIZATION_TEST_CASE.matrix, OptimizationType.MINIMIZE);
+                    assertEquals(0, solver.getRowMinCols().size(), "The row coords should be empty after configure");
+                }
+        );
+    }
+
+    @Test
+    void colMinCoordsTests() {
+        AssignmentSolver solver = new AssignmentSolver();
+        solver.getNotificationHandler().addListener(
+                2,
+                (step, s) -> {
+                    if (step == SolverStep.LV2_SUBTRACT_MIN_COL) {
+                        assertEquals(MINIMIZATION_TEST_CASE.matrix.length, solver.getColMinRows().size(), "The cols coords should not be empty after the subtract cols step");
+                    }
+                }
+        );
+        assertAll(
+                () -> assertEquals(0, solver.getColMinRows().size(), "The cols coords should be empty before configuration"),
+                () -> solver.configure(MINIMIZATION_TEST_CASE.matrix, OptimizationType.MINIMIZE),
+                () -> assertEquals(0, solver.getColMinRows().size(), "The cols coords should be empty before solving"),
+                solver::solve,
+                () -> assertEquals(MINIMIZATION_TEST_CASE.matrix.length, solver.getColMinRows().size(), "The cols coords should not be empty after solving"),
+                () -> {
+                    solver.configure(MINIMIZATION_TEST_CASE.matrix, OptimizationType.MINIMIZE);
+                    assertEquals(0, solver.getColMinRows().size(), "The cols coords should be empty after configure");
+                }
+        );
+    }
+
+    @SuppressWarnings("DataFlowIssue")
+    @Test
+    void theRowMinColsShouldBeUnModifiableView() {
+        AssignmentSolver solver = new AssignmentSolver();
+        List<Integer> rowMinCols = solver.getRowMinCols();
+        assertThrows(UnsupportedOperationException.class, () -> rowMinCols.add(0), "RowMinCols should not be modifiable");
+    }
+
+    @SuppressWarnings("DataFlowIssue")
+    @Test
+    void theColMinRowsShouldBeUnModifiableView() {
+        AssignmentSolver solver = new AssignmentSolver();
+        List<Integer> colMinRows = solver.getColMinRows();
+        assertThrows(UnsupportedOperationException.class, () -> colMinRows.add(0), "ColMinRows should not be modifiable");
+    }
+
     @TestFactory
     public Stream<DynamicTest> solveMinCorrectlyComputesOptimalAssignment() {
         return getTestCases(MINIMIZATION_TEST_CASES_FILE).stream().map(
@@ -100,6 +268,7 @@ class AssignmentSolverTest {
                     solver.configure(t.matrix, OptimizationType.MINIMIZE);
                     solver.solve();
                     assertAll(
+                            () -> assertEquals(AssignmentSolver.SolverState.SOLVED, solver.getState(), "The solver should have solved the problem"),
                             () -> assertArrayEquals(t.expectedSolution, solver.getSolution(), "Wrong solution"),
                             () -> assertEquals(t.optimalValue, solver.getOptimalValue(), "Wrong minimal value")
                     );
@@ -115,6 +284,7 @@ class AssignmentSolverTest {
                     solver.configure(t.matrix, OptimizationType.MAXIMIZE);
                     solver.solve();
                     assertAll(
+                            () -> assertEquals(AssignmentSolver.SolverState.SOLVED, solver.getState(), "The solver should have solved the problem"),
                             () -> assertArrayEquals(t.expectedSolution, solver.getSolution(), "Wrong solution"),
                             () -> assertEquals(t.optimalValue, solver.getOptimalValue(), "Wrong maximal value")
                     );
