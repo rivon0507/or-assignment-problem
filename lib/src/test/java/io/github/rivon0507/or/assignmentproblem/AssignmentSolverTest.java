@@ -196,6 +196,54 @@ class AssignmentSolverTest {
         );
     }
 
+    @Test
+    void rowMinCoordsTests() {
+        AssignmentSolver solver = new AssignmentSolver();
+        solver.getNotificationHandler().addListener(
+                2,
+                (step, s) -> {
+                    if (step == SolverStep.LV2_SUBTRACT_MIN_ROW) {
+                        assertEquals(MINIMIZATION_TEST_CASE.matrix.length, solver.getRowMinCols().size(), "The row coords should not be empty after the subtract row step");
+                    }
+                }
+        );
+        assertAll(
+                () -> assertEquals(0, solver.getRowMinCols().size(), "The row coords should be empty before configuration"),
+                () -> solver.configure(MINIMIZATION_TEST_CASE.matrix, OptimizationType.MINIMIZE),
+                () -> assertEquals(0, solver.getRowMinCols().size(), "The row coords should be empty before solving"),
+                solver::solve,
+                () -> assertEquals(MINIMIZATION_TEST_CASE.matrix.length, solver.getRowMinCols().size(), "The row coords should not be empty after solving"),
+                () -> {
+                    solver.configure(MINIMIZATION_TEST_CASE.matrix, OptimizationType.MINIMIZE);
+                    assertEquals(0, solver.getRowMinCols().size(), "The row coords should be empty after configure");
+                }
+        );
+    }
+
+    @Test
+    void colMinCoordsTests() {
+        AssignmentSolver solver = new AssignmentSolver();
+        solver.getNotificationHandler().addListener(
+                2,
+                (step, s) -> {
+                    if (step == SolverStep.LV2_SUBTRACT_MIN_COL) {
+                        assertEquals(MINIMIZATION_TEST_CASE.matrix.length, solver.getColMinRows().size(), "The cols coords should not be empty after the subtract cols step");
+                    }
+                }
+        );
+        assertAll(
+                () -> assertEquals(0, solver.getColMinRows().size(), "The cols coords should be empty before configuration"),
+                () -> solver.configure(MINIMIZATION_TEST_CASE.matrix, OptimizationType.MINIMIZE),
+                () -> assertEquals(0, solver.getColMinRows().size(), "The cols coords should be empty before solving"),
+                solver::solve,
+                () -> assertEquals(MINIMIZATION_TEST_CASE.matrix.length, solver.getColMinRows().size(), "The cols coords should not be empty after solving"),
+                () -> {
+                    solver.configure(MINIMIZATION_TEST_CASE.matrix, OptimizationType.MINIMIZE);
+                    assertEquals(0, solver.getColMinRows().size(), "The cols coords should be empty after configure");
+                }
+        );
+    }
+
     @TestFactory
     public Stream<DynamicTest> solveMinCorrectlyComputesOptimalAssignment() {
         return getTestCases(MINIMIZATION_TEST_CASES_FILE).stream().map(

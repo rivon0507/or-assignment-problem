@@ -2,12 +2,11 @@ package io.github.rivon0507.or.assignmentproblem;
 
 import lombok.Getter;
 import org.apiguardian.api.API;
+import org.checkerframework.common.value.qual.StringVal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.*;
-import java.util.stream.LongStream;
-import java.util.stream.Stream;
 
 import static io.github.rivon0507.or.assignmentproblem.AssignmentSolver.SolverState.*;
 import static io.github.rivon0507.or.assignmentproblem.listener.SolverStep.*;
@@ -27,9 +26,10 @@ import static io.github.rivon0507.or.assignmentproblem.listener.SolverStep.*;
 ///             int[] optimalAssignment = solver.getSolution();
 ///             for (int i = 0; i < optimalAssignment.length; ++){
 ///                 System.out.printf("Employee %d is assigned to task %d%n", i, optimalAssignment[i]);
-///} System.out.println("Optimal value: " + solver.getOptimalValue());
-///}
-///}
+///             }
+///             System.out.println("Optimal value: " + solver.getOptimalValue());
+///         }
+///     }
 ///}
 ///```
 @Getter
@@ -45,6 +45,20 @@ public class AssignmentSolver {
     private final Set<Coord> framedZeroes = new HashSet<>();
     private final Set<Coord> struckOutZeroes = new HashSet<>();
     private final NotificationHandler notificationHandler = new NotificationHandler();
+    /// A list of column indices where the minimum values were found in each row 
+    /// during the row-wise minimum subtraction step.
+    /// 
+    /// For each row `i`, the minimum value in that row was found at 
+    /// `(i, rowMinCols[i])`, meaning the value at row `i` and column 
+    /// `rowMinCols[i]` was the smallest in that row before subtraction.
+    private final List<Integer> rowMinCols = new ArrayList<>();
+    /// A list of row indices where the minimum values were found in each column 
+    /// during the column-wise minimum subtraction step.
+    /// 
+    /// For each column `i`, the minimum value in that column was found at 
+    /// `(colMinRows[i], i)`, meaning the value at row `colMinRows[i]` 
+    /// and column `i` was the smallest in that column before subtraction.
+    private final List<Integer> colMinRows = new ArrayList<>();
 
     /// The method that launches the computation. It implements the Hungarian algorithm.
     public void solve() {
@@ -52,8 +66,8 @@ public class AssignmentSolver {
         if (state == SOLVING) throw new IllegalStateException("The solver is still SOLVING");
 
         state = SOLVING;
-        subtractEachColByTheirMinimum();
-        subtractEachRowByTheirMinimum();
+        subtractEachByMinimum("col");
+        subtractEachByMinimum("row");
         notificationHandler.notify(LV1_SUBTRACT_MIN, this);
         while (framedZeroes.size() != matrix.length) {
             framedZeroes.clear();
@@ -283,6 +297,8 @@ public class AssignmentSolver {
     public void configure(long[] @NotNull [] matrix, OptimizationType optimization) {
         this.matrix = new long[matrix.length][matrix.length];
         this.optimization = optimization;
+        colMinRows.clear();
+        rowMinCols.clear();
         ceiling = Arrays.stream(matrix).flatMapToLong(Arrays::stream).max().orElseThrow();
         for (int r = 0; r < matrix.length; r++) {
             for (int c = 0; c < matrix.length; c++) {
@@ -297,30 +313,33 @@ public class AssignmentSolver {
         state = CONFIGURED;
     }
 
-    private void subtractEachRowByTheirMinimum() {
-        for (int r = 0; r < matrix.length; r++) {
-            long rowMin = LongStream.of(matrix[r]).min().orElseThrow();
-            if (rowMin == 0) continue;
-            optimalValue += rowMin;
-            for (int c = 0; c < matrix.length; c++) {
-                matrix[r][c] -= rowMin;
+    private void subtractEachByMinimum(@StringVal({"row", "col"}) String rowOrCol) {
+        boolean isRow = "row".equals(rowOrCol);
+        for (int i = 0; i < matrix.length; i++) {
+            long minValue = Long.MAX_VALUE;
+            int minIndex = -1;
+            // Find the minimum value in the row/column
+            for (int j = 0; j < matrix.length; j++) {
+                long value = isRow ? matrix[i][j] : matrix[j][i];
+                if (value < minValue) {
+                    minValue = value;
+                    minIndex = j;
+                }
+            }
+            if (isRow) rowMinCols.add(minIndex);
+            else colMinRows.add(minIndex);
+
+            if (minValue == 0) continue;
+            optimalValue += minValue;
+            // Subtract the minimum from the row/column
+            for (int j = 0; j < matrix.length; j++) {
+                if (isRow) matrix[i][j] -= minValue;
+                else matrix[j][i] -= minValue;
             }
         }
-        notificationHandler.notify(LV2_SUBTRACT_MIN_ROW, this);
+        notificationHandler.notify(isRow ? LV2_SUBTRACT_MIN_ROW : LV2_SUBTRACT_MIN_COL, this);
     }
 
-    private void subtractEachColByTheirMinimum() {
-        for (int c = 0; c < matrix.length; c++) {
-            final int column = c;
-            long columnMin = Stream.of(matrix).mapToLong(r -> r[column]).min().orElseThrow();
-            if (columnMin == 0) continue;
-            optimalValue += columnMin;
-            for (int r = 0; r < matrix.length; r++) {
-                matrix[r][column] -= columnMin;
-            }
-        }
-        notificationHandler.notify(LV2_SUBTRACT_MIN_COL, this);
-    }
 
     /// Type of optimization
     public enum OptimizationType {
