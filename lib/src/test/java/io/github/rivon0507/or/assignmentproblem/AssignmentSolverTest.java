@@ -267,6 +267,7 @@ class AssignmentSolverTest {
                     AssignmentSolver solver = new AssignmentSolver();
                     solver.configure(t.matrix, OptimizationType.MINIMIZE);
                     solver.solve();
+                    System.out.println(Arrays.toString(solver.getSolution()));
                     assertAll(
                             () -> assertEquals(AssignmentSolver.SolverState.SOLVED, solver.getState(), "The solver should have solved the problem"),
                             () -> assertArrayEquals(t.expectedSolution, solver.getSolution(), "Wrong solution"),
@@ -311,7 +312,7 @@ class AssignmentSolverTest {
                     int matrixSize = Integer.parseInt(scanner.nextLine());
                     long[][] matrix = new long[matrixSize][];
                     for (int i = 0; i < matrixSize; i++, lineNumber++) {
-                        matrix[i] = Arrays.stream(scanner.nextLine().split("\\s+"))
+                        matrix[i] = Arrays.stream(scanner.nextLine().trim().split("\\s+"))
                                 .mapToLong(Long::parseLong)
                                 .toArray();
                         if (matrix[i].length != matrixSize) {
