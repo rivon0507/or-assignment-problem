@@ -1,16 +1,21 @@
 package io.github.rivon0507.or.assignmentproblem;
 
+import io.github.rivon0507.or.assignmentproblem.listener.SolverListener;
+import io.github.rivon0507.or.assignmentproblem.listener.SolverStep;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
+import org.mockito.Mockito;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 import java.util.stream.Stream;
 
-import static io.github.rivon0507.or.assignmentproblem.AssignmentSolver.*;
+import static io.github.rivon0507.or.assignmentproblem.AssignmentSolver.OptimizationType;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 class AssignmentSolverTest {
 
@@ -90,6 +95,86 @@ class AssignmentSolverTest {
         AssignmentSolver solver = new AssignmentSolver();
         Set<Coord> zeroBarre = solver.getStruckOutZeroes();
         assertThrows(UnsupportedOperationException.class, () -> zeroBarre.add(Coord.of(0, 0)), "Zero barre should not be modifiable");
+    }
+
+    @Test
+    void shouldNotifyLevel1ListenerForLevel1Steps() {
+        SolverListener listener = Mockito.mock(SolverListener.class);
+        doNothing().when(listener).onStepComplete(any(SolverStep.class), any());
+
+        AssignmentSolver solver = new AssignmentSolver();
+        solver.getNotificationHandler().addListener(1, listener);
+        solver.configure(MINIMIZATION_TEST_CASE.matrix, OptimizationType.MINIMIZE);
+        solver.solve();
+
+        verify(listener, atLeastOnce().description("The listener should be called on the level 1 steps"))
+                .onStepComplete(argThat(solverStep -> solverStep.level() == 1), any());
+    }
+
+    @Test
+    void shouldNotifyLevel2ListenerForLevel2Steps() {
+        SolverListener listener = Mockito.mock(SolverListener.class);
+        doNothing().when(listener).onStepComplete(any(SolverStep.class), any());
+        AssignmentSolver solver = new AssignmentSolver();
+        solver.getNotificationHandler().addListener(2, listener);
+        solver.configure(MINIMIZATION_TEST_CASE.matrix, OptimizationType.MINIMIZE);
+        solver.solve();
+
+        verify(listener, atLeastOnce().description("The listener should be called on the level 2 steps"))
+                .onStepComplete(argThat(solverStep -> solverStep.level() == 2), any());
+    }
+
+    @Test
+    void shouldNotifyLevel2ListenerForLevel1Steps() {
+        SolverListener listener = Mockito.mock(SolverListener.class);
+        doNothing().when(listener).onStepComplete(any(SolverStep.class), any());
+        AssignmentSolver solver = new AssignmentSolver();
+        solver.getNotificationHandler().addListener(2, listener);
+        solver.configure(MINIMIZATION_TEST_CASE.matrix, OptimizationType.MINIMIZE);
+        solver.solve();
+
+        verify(listener, atLeastOnce().description("The level 2 listener should be called on the level 1 steps"))
+                .onStepComplete(argThat(solverStep -> solverStep.level() == 1), any());
+    }
+
+    @Test
+    void shouldNotNotifyLevel1ListenerForLevel2Steps() {
+        SolverListener listener = Mockito.mock(SolverListener.class);
+        doNothing().when(listener).onStepComplete(any(SolverStep.class), any());
+        AssignmentSolver solver = new AssignmentSolver();
+        solver.getNotificationHandler().addListener(1, listener);
+        solver.configure(MINIMIZATION_TEST_CASE.matrix, OptimizationType.MINIMIZE);
+        solver.solve();
+
+        verify(listener, never().description("The level 1 listener should not be called on the level 2 steps"))
+                .onStepComplete(argThat(solverStep -> solverStep.level() == 2), any());
+    }
+
+    @Test
+    void shouldNotifyMultipleListeners() {
+        SolverListener lv1Listener1 = Mockito.mock(SolverListener.class);
+        SolverListener lv1Listener2 = Mockito.mock(SolverListener.class);
+        SolverListener lv2Listener = Mockito.mock(SolverListener.class);
+        doNothing().when(lv1Listener1).onStepComplete(any(SolverStep.class), any());
+        doNothing().when(lv1Listener2).onStepComplete(any(SolverStep.class), any());
+        doNothing().when(lv2Listener).onStepComplete(any(SolverStep.class), any());
+
+        AssignmentSolver solver = new AssignmentSolver();
+        solver.getNotificationHandler().addListener(1, lv1Listener1);
+        solver.getNotificationHandler().addListener(1, lv1Listener2);
+        solver.getNotificationHandler().addListener(2, lv2Listener);
+        solver.configure(MINIMIZATION_TEST_CASE.matrix, OptimizationType.MINIMIZE);
+        solver.solve();
+
+        assertAll(
+                "All listeners should be called at least once",
+                () -> verify(lv1Listener1, atLeastOnce().description("Call lv1Listener1"))
+                        .onStepComplete(any(SolverStep.class), any()),
+                () -> verify(lv1Listener2, atLeastOnce().description("Call lv1Listener2"))
+                        .onStepComplete(any(SolverStep.class), any()),
+                () -> verify(lv2Listener, atLeastOnce().description("Call lv2Listener"))
+                        .onStepComplete(any(SolverStep.class), any())
+        );
     }
 
     @TestFactory

@@ -8,6 +8,8 @@ import java.util.*;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
+import static io.github.rivon0507.or.assignmentproblem.listener.SolverStep.*;
+
 /// The main class of this package. It provides methods to initialize it with the cost matrix, as well as the type of
 /// optimization desired. Basic usage example :
 /// ```java
@@ -40,14 +42,16 @@ public class AssignmentSolver {
     private final Set<Integer> markedCols = new HashSet<>();
     private final Set<Coord> framedZeroes = new HashSet<>();
     private final Set<Coord> struckOutZeroes = new HashSet<>();
+    private final NotificationHandler notificationHandler = new NotificationHandler();
 
-    /// The method that launches the computing. It implements the Hungarian algorithm.
+    /// The method that launches the computation. It implements the Hungarian algorithm.
     public void solve() {
         if (matrix == null) {
             throw new IllegalStateException("The matrix is null, please set the matrix first");
         }
         subtractEachColByTheirMinimum();
         subtractEachRowByTheirMinimum();
+        notificationHandler.notify(LV1_SUBTRACT_MIN, this);
         while (framedZeroes.size() != matrix.length) {
             framedZeroes.clear();
             struckOutZeroes.clear();
@@ -59,13 +63,18 @@ public class AssignmentSolver {
                 int finalR = r;
                 if (framedZeroes.stream().mapToInt(Coord::row).noneMatch(i -> i == finalR)) {
                     if (markedRows.add(r)) {
+                        notificationHandler.notify(LV2_MARK_ROW, this);
                         markColumnsIntersectingWith(r);
                     }
                 }
             }
+            notificationHandler.notify(LV1_MARK_LINES_AND_COLS, this);
             long min = getMinInNonMarkedCells();
+            notificationHandler.notify(LV2_FIND_MIN, this);
             optimalValue += min;
             addToNonMarkedCellsAndSubtractFromDoublyMarked(min);
+            notificationHandler.notify(LV2_SUBTRACT_ADD_MIN, this);
+            notificationHandler.notify(LV1_FIND_SUBTRACT_ADD_MIN, this);
         }
         solution = framedZeroes.stream().sorted(Comparator.comparing(Coord::row)).mapToLong(Coord::col).toArray();
         if (optimization == OptimizationType.MAXIMIZE) {
@@ -194,6 +203,7 @@ public class AssignmentSolver {
         for (int r = 0; r < matrix.length; r++) {
             if (framedZeroes.contains(Coord.of(r, c))) {
                 if (markedRows.add(r)) {
+                    notificationHandler.notify(LV2_MARK_ROW, this);
                     markColumnsIntersectingWith(r);
                 }
             }
@@ -204,6 +214,7 @@ public class AssignmentSolver {
         for (int c = 0; c < matrix.length; c++) {
             if (struckOutZeroes.contains(Coord.of(r, c))) {
                 if (markedCols.add(c)) {
+                    notificationHandler.notify(LV2_MARK_COL, this);
                     markRowsIntersectingWith(c);
                 }
             }
@@ -218,6 +229,7 @@ public class AssignmentSolver {
             }
             Coord coord = optionalCoord.get();
             framedZeroes.add(coord);
+            notificationHandler.notify(LV2_FRAME_ZERO, this);
             for (int r = 0; r < matrix.length; r++) {
                 if (matrix[r][coord.col()] == 0 && r != coord.row()) {
                     struckOutZeroes.add(coord.withRow(r));
@@ -228,7 +240,9 @@ public class AssignmentSolver {
                     struckOutZeroes.add(coord.withCol(c));
                 }
             }
+            notificationHandler.notify(LV2_STRIKE_OUT_ZERO, this);
         }
+        notificationHandler.notify(LV1_MARK_ZEROES, this);
     }
 
     private Optional<Coord> getFirstZeroOfLineWithMinimalZeroes(Set<Coord> zeroEncadre, Set<Coord> zeroBarre) {
@@ -284,6 +298,7 @@ public class AssignmentSolver {
                 matrix[r][c] -= rowMin;
             }
         }
+        notificationHandler.notify(LV2_SUBTRACT_MIN_ROW, this);
     }
 
     private void subtractEachColByTheirMinimum() {
@@ -296,6 +311,7 @@ public class AssignmentSolver {
                 matrix[r][column] -= columnMin;
             }
         }
+        notificationHandler.notify(LV2_SUBTRACT_MIN_COL, this);
     }
 
     /// Type of optimization
