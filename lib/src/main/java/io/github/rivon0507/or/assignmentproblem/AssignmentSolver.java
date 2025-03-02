@@ -1,6 +1,8 @@
 package io.github.rivon0507.or.assignmentproblem;
 
 import lombok.Getter;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.*;
 import java.util.stream.LongStream;
@@ -36,8 +38,8 @@ public class AssignmentSolver {
     private long ceiling = 0;
     private final Set<Integer> markedRows = new HashSet<>();
     private final Set<Integer> markedCols = new HashSet<>();
-    private final Set<Coord> zeroEncadre = new HashSet<>();
-    private final Set<Coord> zeroBarre = new HashSet<>();
+    private final Set<Coord> framedZeroes = new HashSet<>();
+    private final Set<Coord> struckOutZeroes = new HashSet<>();
 
     /// The method that launches the computing. It implements the Hungarian algorithm.
     public void solve() {
@@ -46,16 +48,16 @@ public class AssignmentSolver {
         }
         subtractEachColByTheirMinimum();
         subtractEachRowByTheirMinimum();
-        while (zeroEncadre.size() != matrix.length) {
-            zeroEncadre.clear();
-            zeroBarre.clear();
+        while (framedZeroes.size() != matrix.length) {
+            framedZeroes.clear();
+            struckOutZeroes.clear();
             markedRows.clear();
             markedCols.clear();
             markZeroes();
-            if (zeroEncadre.size() == matrix.length) break;
+            if (framedZeroes.size() == matrix.length) break;
             for (int r = 0; r < matrix.length; r++) {
                 int finalR = r;
-                if (zeroEncadre.stream().mapToInt(Coord::row).noneMatch(i -> i == finalR)) {
+                if (framedZeroes.stream().mapToInt(Coord::row).noneMatch(i -> i == finalR)) {
                     if (markedRows.add(r)) {
                         markColumnsIntersectingWith(r);
                     }
@@ -65,11 +67,105 @@ public class AssignmentSolver {
             optimalValue += min;
             addToNonMarkedCellsAndSubtractFromDoublyMarked(min);
         }
-        solution = zeroEncadre.stream().sorted(Comparator.comparing(Coord::row)).mapToLong(Coord::col).toArray();
+        solution = framedZeroes.stream().sorted(Comparator.comparing(Coord::row)).mapToLong(Coord::col).toArray();
         if (optimization == OptimizationType.MAXIMIZE) {
             optimalValue = matrix.length * ceiling - optimalValue;
         }
         solved = true;
+    }
+
+    /// Returns a copy of the assignment matrix used in the solver.
+    ///
+    /// The returned matrix represents the current state of the problem,
+    /// but modifying it will not affect the solver's internal state.
+    /// This method ensures that the internal data remains immutable
+    /// from external modifications.
+    ///
+    ///
+    /// @return a deep copy of the assignment matrix
+    public long[][] getMatrix() {
+        return Arrays.stream(matrix).map(x -> Arrays.copyOf(x, x.length)).toArray(long[][]::new);
+    }
+
+    /// Returns a copy of the computed optimal assignment solution.
+    ///
+    /// The solution is represented as an array where the index corresponds
+    /// to a row, and the value at that index represents the assigned column.
+    /// This method ensures that modifications to the returned array do not
+    /// affect the internal state of the solver.
+    ///
+    ///
+    /// @return a copy of the optimal assignment solution as a `long[]` array
+    public long[] getSolution() {
+        return Arrays.copyOf(solution, solution.length);
+    }
+
+    /// Returns an unmodifiable view of the set of marked rows.
+    ///
+    /// Marked rows are those identified during the solving process
+    /// as part of the optimal assignment calculation. This method
+    /// ensures that modifications to the returned set do not affect
+    /// the internal state of the solver.
+    ///
+    ///
+    /// @return an unmodifiable set of marked row indices
+    @Unmodifiable
+    public Set<Integer> getMarkedRows() {
+        return Collections.unmodifiableSet(markedRows);
+    }
+
+    /// Returns an unmodifiable view of the set of marked columns.
+    ///
+    /// Marked columns are those identified during the solving process
+    /// as part of the optimal assignment calculation. This method
+    /// ensures that modifications to the returned set do not affect
+    /// the internal state of the solver.
+    ///
+    ///
+    /// @return an unmodifiable set of marked column indices
+    @Unmodifiable
+    public Set<Integer> getMarkedCols() {
+        return Collections.unmodifiableSet(markedCols);
+    }
+
+    /// Returns an unmodifiable view of the set of framed zero positions.
+    /// These are the zeroes selected as part of the optimal assignment process.
+    ///
+    /// @return an unmodifiable set of coordinates representing framed zeroes
+    /// @deprecated Use [#getFramedZeroes()] instead.
+    @Unmodifiable
+    @Deprecated(since = "0.2.0")
+    public Set<Coord> getZeroEncadre() {
+        return getFramedZeroes();
+    }
+
+    /// Returns an unmodifiable view of the set of framed zero positions.
+    /// These are the zeroes selected as part of the optimal assignment process.
+    ///
+    /// @return an unmodifiable set of coordinates representing framed zeroes
+    @Unmodifiable
+    public Set<Coord> getFramedZeroes() {
+        return Collections.unmodifiableSet(framedZeroes);
+    }
+
+    /// Returns an unmodifiable view of the set of struck-out zero positions.
+    /// These are zeroes that have been invalidated during the solving process.
+    ///
+    /// @return an unmodifiable set of coordinates representing struck-out zeroes
+    /// @deprecated Use [#getStruckOutZeroes()] instead.
+    @Unmodifiable
+    @Deprecated(since = "0.2.0")
+    public Set<Coord> getZeroBarre() {
+        return getStruckOutZeroes();
+    }
+
+    /// Returns an unmodifiable view of the set of struck-out zero positions.
+    /// These are zeroes that have been invalidated during the solving process.
+    ///
+    /// @return an unmodifiable set of coordinates representing struck-out zeroes
+    @Unmodifiable
+    public Set<Coord> getStruckOutZeroes() {
+        return Collections.unmodifiableSet(struckOutZeroes);
     }
 
     private void addToNonMarkedCellsAndSubtractFromDoublyMarked(long min) {
@@ -96,7 +192,7 @@ public class AssignmentSolver {
 
     private void markRowsIntersectingWith(int c) {
         for (int r = 0; r < matrix.length; r++) {
-            if (zeroEncadre.contains(Coord.of(r, c))) {
+            if (framedZeroes.contains(Coord.of(r, c))) {
                 if (markedRows.add(r)) {
                     markColumnsIntersectingWith(r);
                 }
@@ -106,7 +202,7 @@ public class AssignmentSolver {
 
     private void markColumnsIntersectingWith(int r) {
         for (int c = 0; c < matrix.length; c++) {
-            if (zeroBarre.contains(Coord.of(r, c))) {
+            if (struckOutZeroes.contains(Coord.of(r, c))) {
                 if (markedCols.add(c)) {
                     markRowsIntersectingWith(c);
                 }
@@ -116,20 +212,20 @@ public class AssignmentSolver {
 
     private void markZeroes() {
         while (true) {
-            Optional<Coord> optionalCoord = getFirstZeroOfLineWithMinimalZeroes(zeroEncadre, zeroBarre);
+            Optional<Coord> optionalCoord = getFirstZeroOfLineWithMinimalZeroes(framedZeroes, struckOutZeroes);
             if (optionalCoord.isEmpty()) {
                 break;
             }
             Coord coord = optionalCoord.get();
-            zeroEncadre.add(coord);
+            framedZeroes.add(coord);
             for (int r = 0; r < matrix.length; r++) {
                 if (matrix[r][coord.col()] == 0 && r != coord.row()) {
-                    zeroBarre.add(coord.withRow(r));
+                    struckOutZeroes.add(coord.withRow(r));
                 }
             }
             for (int c = 0; c < matrix.length; c++) {
                 if (matrix[coord.row()][c] == 0 && c != coord.col()) {
-                    zeroBarre.add(coord.withCol(c));
+                    struckOutZeroes.add(coord.withCol(c));
                 }
             }
         }
@@ -162,14 +258,15 @@ public class AssignmentSolver {
     /// Sets up the input of the solver. Reinitializes the old results.
     /// @param matrix the matrix of costs or of productivity
     /// @param optimization the type of optimization to be performed
-    public void configure(long[][] matrix, OptimizationType optimization) {
-        this.matrix = matrix;
+    public void configure(long[] @NotNull [] matrix, OptimizationType optimization) {
+        this.matrix = new long[matrix.length][matrix.length];
         this.optimization = optimization;
-        if (this.optimization == OptimizationType.MAXIMIZE) {
-            ceiling = Arrays.stream(matrix).flatMapToLong(Arrays::stream).max().orElseThrow();
-            for (int r = 0; r < matrix.length; r++) {
-                for (int c = 0; c < matrix.length; c++) {
-                    matrix[r][c] = ceiling - matrix[r][c];
+        ceiling = Arrays.stream(matrix).flatMapToLong(Arrays::stream).max().orElseThrow();
+        for (int r = 0; r < matrix.length; r++) {
+            for (int c = 0; c < matrix.length; c++) {
+                this.matrix[r][c] = matrix[r][c];
+                if (this.optimization == OptimizationType.MAXIMIZE) {
+                    this.matrix[r][c] = ceiling - this.matrix[r][c];
                 }
             }
         }
