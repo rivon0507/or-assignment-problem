@@ -5,6 +5,7 @@ import io.github.rivon0507.or.assignmentproblem.listener.SolverStep;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
+import org.junit.jupiter.api.Timeout;
 import org.mockito.Mockito;
 
 import java.io.IOException;
@@ -177,6 +178,24 @@ class AssignmentSolverTest {
         );
     }
 
+    @Test
+    @Timeout(10)
+    void shouldPreventInfiniteRecursionOfSolve() {
+        AssignmentSolver solver = new AssignmentSolver();
+        final int[] recursionLevels = new int[]{0};
+        SolverListener listener = (step, s) -> {
+            recursionLevels[0]++;
+            s.solve();
+        };
+        solver.getNotificationHandler().addListener(1, listener);
+        solver.configure(MINIMIZATION_TEST_CASE.matrix, OptimizationType.MINIMIZE);
+        assertAll(
+                "There should be no infinite recursion",
+                () -> assertThrows(IllegalStateException.class, solver::solve, "The recursive call to solve() should be prevented"),
+                () -> assertEquals(1, recursionLevels[0], "The recursion level should be 1: only one call to solve() in the call stack")
+        );
+    }
+
     @TestFactory
     public Stream<DynamicTest> solveMinCorrectlyComputesOptimalAssignment() {
         return getTestCases(MINIMIZATION_TEST_CASES_FILE).stream().map(
@@ -185,6 +204,7 @@ class AssignmentSolverTest {
                     solver.configure(t.matrix, OptimizationType.MINIMIZE);
                     solver.solve();
                     assertAll(
+                            () -> assertEquals(AssignmentSolver.SolverState.SOLVED, solver.getState(), "The solver should have solved the problem"),
                             () -> assertArrayEquals(t.expectedSolution, solver.getSolution(), "Wrong solution"),
                             () -> assertEquals(t.optimalValue, solver.getOptimalValue(), "Wrong minimal value")
                     );
@@ -200,6 +220,7 @@ class AssignmentSolverTest {
                     solver.configure(t.matrix, OptimizationType.MAXIMIZE);
                     solver.solve();
                     assertAll(
+                            () -> assertEquals(AssignmentSolver.SolverState.SOLVED, solver.getState(), "The solver should have solved the problem"),
                             () -> assertArrayEquals(t.expectedSolution, solver.getSolution(), "Wrong solution"),
                             () -> assertEquals(t.optimalValue, solver.getOptimalValue(), "Wrong maximal value")
                     );

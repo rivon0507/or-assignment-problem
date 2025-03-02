@@ -1,6 +1,7 @@
 package io.github.rivon0507.or.assignmentproblem;
 
 import lombok.Getter;
+import org.apiguardian.api.API;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Unmodifiable;
 
@@ -8,6 +9,7 @@ import java.util.*;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
+import static io.github.rivon0507.or.assignmentproblem.AssignmentSolver.SolverState.*;
 import static io.github.rivon0507.or.assignmentproblem.listener.SolverStep.*;
 
 /// The main class of this package. It provides methods to initialize it with the cost matrix, as well as the type of
@@ -16,23 +18,23 @@ import static io.github.rivon0507.or.assignmentproblem.listener.SolverStep.*;
 /// import me.rivon0507.or.assignmentproblem.AssignmentSolver;
 ///
 /// public class Main {
-///     public static void main(String[] args) {
+///     public static void main(String[] args){
 ///         AssignmentSolver solver = new AssignmentSolver();
-///         int[][] costMatrix = {{9, 2, 7}, {6, 4, 3}, {5, 8, 1}};
+///         int[][] costMatrix = {{9, 2, 7},{6, 4, 3},{5, 8, 1}};
 ///         solver.configure(costMatrix, AssignmentSolver.OptimizationType.MINIMIZE);
 ///         solver.solve();
-///         if (solver.isSolved()) {
+///         if (solver.isSolved()){
 ///             int[] optimalAssignment = solver.getSolution();
-///             for (int i = 0; i < optimalAssignment.length; ++) {
+///             for (int i = 0; i < optimalAssignment.length; ++){
 ///                 System.out.printf("Employee %d is assigned to task %d%n", i, optimalAssignment[i]);
-///             } System.out.println("Optimal value: " + solver.getOptimalValue());
-///         }
-///     }
-/// }
-/// ```
+///} System.out.println("Optimal value: " + solver.getOptimalValue());
+///}
+///}
+///}
+///```
 @Getter
 public class AssignmentSolver {
-    private boolean solved;
+    private SolverState state = UNINITIALIZED;
     private long[][] matrix;
     private OptimizationType optimization;
     private long[] solution = null;
@@ -46,9 +48,10 @@ public class AssignmentSolver {
 
     /// The method that launches the computation. It implements the Hungarian algorithm.
     public void solve() {
-        if (matrix == null) {
-            throw new IllegalStateException("The matrix is null, please set the matrix first");
-        }
+        if (matrix == null) throw new IllegalStateException("The matrix is null, please set the matrix first");
+        if (state == SOLVING) throw new IllegalStateException("The solver is still SOLVING");
+
+        state = SOLVING;
         subtractEachColByTheirMinimum();
         subtractEachRowByTheirMinimum();
         notificationHandler.notify(LV1_SUBTRACT_MIN, this);
@@ -80,7 +83,7 @@ public class AssignmentSolver {
         if (optimization == OptimizationType.MAXIMIZE) {
             optimalValue = matrix.length * ceiling - optimalValue;
         }
-        solved = true;
+        state = SOLVED;
     }
 
     /// Returns a copy of the assignment matrix used in the solver.
@@ -94,6 +97,11 @@ public class AssignmentSolver {
     /// @return a deep copy of the assignment matrix
     public long[][] getMatrix() {
         return Arrays.stream(matrix).map(x -> Arrays.copyOf(x, x.length)).toArray(long[][]::new);
+    }
+
+    @API(status = API.Status.STABLE)
+    public boolean isSolved() {
+        return state == SOLVED;
     }
 
     /// Returns a copy of the computed optimal assignment solution.
@@ -286,7 +294,7 @@ public class AssignmentSolver {
         }
         solution = null;
         optimalValue = 0;
-        solved = false;
+        state = CONFIGURED;
     }
 
     private void subtractEachRowByTheirMinimum() {
@@ -320,5 +328,31 @@ public class AssignmentSolver {
         MINIMIZE,
         /// Maximization of profit
         MAXIMIZE,
+    }
+
+    /// Enum representing the various states of the [AssignmentSolver].
+    /// This enum tracks the lifecycle of the solver, including its configuration,
+    /// solving progress, and error handling. The states help in ensuring that the solver
+    /// only executes certain actions in the correct order, preventing unnecessary re-solving
+    /// or improper configurations.
+    ///
+    /// The possible states are as follows:
+    ///
+    ///   - [#UNINITIALIZED]: The solver has not been configured yet. No input matrix has been received.
+    ///   - [#CONFIGURED]: The solver has been configured with a valid input matrix and optimization mode.
+    ///   - [#SOLVING]: The solver is currently in the process of solving the assignment problem.
+    ///   - [#ERROR]: An error occurred during the solver's operation, and it is in an invalid state.
+    ///   - [#SOLVED]: The solver has successfully completed the assignment problem solution.
+    public enum SolverState {
+        /// The solver is in an uninitialized state, meaning no input matrix has been provided yet.
+        UNINITIALIZED,
+        /// The solver has been successfully configured with the input matrix and optimization mode.
+        CONFIGURED,
+        /// The solver is actively solving the assignment problem.
+        SOLVING,
+        /// The solver encountered an error and cannot proceed with solving. The state of the solver is invalid.
+        ERROR,
+        /// The solver has successfully completed and found an optimal solution for the assignment problem.
+        SOLVED
     }
 }
