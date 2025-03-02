@@ -46,7 +46,7 @@ public enum SolverStep {
     /// Level 2: Find the minimum value in the matrix for [#LV1_FIND_SUBTRACT_ADD_MIN]
     LV2_FIND_MIN(2),
 
-    /// Level 2: Subtract or add the minimum value in the matrix for [#LV1_FIND_SUBTRACT_ADD_MIN}]
+    /// Level 2: Subtract or add the minimum value in the matrix for [#LV1_FIND_SUBTRACT_ADD_MIN]
     LV2_SUBTRACT_ADD_MIN(2);
 
     private final @Range(from = 1, to = 2) int level;
@@ -55,6 +55,7 @@ public enum SolverStep {
         this.level = level;
     }
 
+    /// @return the level of this step
     public int level() {
         return level;
     }

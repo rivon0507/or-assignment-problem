@@ -15,7 +15,6 @@ import java.util.stream.Stream;
 
 import static io.github.rivon0507.or.assignmentproblem.AssignmentSolver.OptimizationType;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class AssignmentSolverTest {

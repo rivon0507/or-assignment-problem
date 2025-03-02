@@ -93,6 +93,7 @@ public class AssignmentSolver {
     ///
     /// For each row `i`, the minimum value in that row was found at `(i, rowMinCols[i])`, meaning the value at row `i`
     ///  and column `rowMinCols[i]` was the smallest in that row before subtraction.
+    /// @return the list of column indices
     @Unmodifiable
     public List<Integer> getRowMinCols() {
         return Collections.unmodifiableList(rowMinCols);
@@ -103,6 +104,7 @@ public class AssignmentSolver {
     ///
     /// For each column `i`, the minimum value in that column was found at `(colMinRows[i], i)`, meaning the value at
     /// row `colMinRows[i]` and column `i` was the smallest in that column before subtraction.
+    /// @return the list of row indices
     @Unmodifiable
     public List<Integer> getColMinRows() {
         return Collections.unmodifiableList(colMinRows);
@@ -120,6 +122,7 @@ public class AssignmentSolver {
         return Arrays.stream(matrix).map(x -> Arrays.copyOf(x, x.length)).toArray(long[][]::new);
     }
 
+    /// @return whether this solver has finished solving the matrix or not
     @API(status = API.Status.STABLE)
     public boolean isSolved() {
         return state == SOLVED;
