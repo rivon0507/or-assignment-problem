@@ -31,7 +31,7 @@ class AssignmentSolverTest {
                     {72, 32, 55, 51, 3, 81},
                     {69, 76, 12, 99, 83, 80}
             },
-            new long[]{1, 5, 0, 3, 4, 2},
+            new int[]{1, 5, 0, 3, 4, 2},
             115
     );
 
@@ -340,8 +340,8 @@ class AssignmentSolverTest {
                         }
                     }
                     lineNumber++;
-                    long[] expectedSolution = Arrays.stream(scanner.nextLine().split("\\s+"))
-                            .mapToLong(Long::parseLong)
+                    int[] expectedSolution = Arrays.stream(scanner.nextLine().split("\\s+"))
+                            .mapToInt(Integer::parseInt)
                             .toArray();
                     if (expectedSolution.length != matrixSize) {
                         throw new IllegalStateException("%s : Not enough elements at line %d, expected %d".formatted(fileName, lineNumber, matrixSize));
@@ -360,7 +360,7 @@ class AssignmentSolverTest {
 
     record TestCase(
             long[][] matrix,
-            long[] expectedSolution,
+            int[] expectedSolution,
             long optimalValue
     ) {
     }
