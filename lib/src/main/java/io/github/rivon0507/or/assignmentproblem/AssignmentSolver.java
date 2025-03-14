@@ -26,10 +26,10 @@ import static io.github.rivon0507.or.assignmentproblem.listener.SolverStep.*;
 ///             int[] optimalAssignment = solver.getSolution();
 ///             for (int i = 0; i < optimalAssignment.length; ++){
 ///                 System.out.printf("Employee %d is assigned to task %d%n", i, optimalAssignment[i]);
-///             }
+///}
 ///             System.out.println("Optimal value: " + solver.getOptimalValue());
-///         }
-///     }
+///}
+///}
 ///}
 ///```
 @Getter
@@ -37,7 +37,7 @@ public class AssignmentSolver {
     private SolverState state = UNINITIALIZED;
     private long[][] matrix;
     private OptimizationType optimization;
-    private long[] solution = null;
+    private int[] solution = null;
     private long optimalValue = 0;
     private long ceiling = 0;
     private final Set<Integer> markedRows = new HashSet<>();
@@ -81,7 +81,7 @@ public class AssignmentSolver {
             notificationHandler.notify(LV2_SUBTRACT_ADD_MIN, this);
             notificationHandler.notify(LV1_FIND_SUBTRACT_ADD_MIN, this);
         }
-        solution = framedZeroes.stream().sorted(Comparator.comparing(Coord::row)).mapToLong(Coord::col).toArray();
+        solution = framedZeroes.stream().sorted(Comparator.comparing(Coord::row)).mapToInt(Coord::col).toArray();
         if (optimization == OptimizationType.MAXIMIZE) {
             optimalValue = matrix.length * ceiling - optimalValue;
         }
@@ -117,8 +117,9 @@ public class AssignmentSolver {
     /// This method ensures that the internal data remains immutable
     /// from external modifications.
     ///
-    /// @return a deep copy of the assignment matrix
+    /// @return a deep copy of the assignment matrix, null if the matrix was not initialized
     public long[][] getMatrix() {
+        if (matrix == null) return null;
         return Arrays.stream(matrix).map(x -> Arrays.copyOf(x, x.length)).toArray(long[][]::new);
     }
 
@@ -135,8 +136,10 @@ public class AssignmentSolver {
     /// This method ensures that modifications to the returned array do not
     /// affect the internal state of the solver.
     ///
-    /// @return a copy of the optimal assignment solution as a `long[]` array
-    public long[] getSolution() {
+    /// @return a copy of the optimal assignment solution as a `int[]` array, or null if there is still no solution
+    ///  (still solving or not configured)
+    public int[] getSolution() {
+        if (solution == null) return null;
         return Arrays.copyOf(solution, solution.length);
     }
 

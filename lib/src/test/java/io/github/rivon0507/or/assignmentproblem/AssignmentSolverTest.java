@@ -30,7 +30,7 @@ class AssignmentSolverTest {
                     {72, 32, 55, 51, 3, 81},
                     {69, 76, 12, 99, 83, 80}
             },
-            new long[]{1, 5, 0, 3, 4, 2},
+            new int[]{1, 5, 0, 3, 4, 2},
             115
     );
 
@@ -259,6 +259,27 @@ class AssignmentSolverTest {
         assertThrows(UnsupportedOperationException.class, () -> colMinRows.add(0), "ColMinRows should not be modifiable");
     }
 
+    @Test
+    void shouldReturnNullWhenAskedForSolutionWhileStillSolving() {
+        AssignmentSolver solver = new AssignmentSolver();
+        assertAll(
+                () -> assertNull(solver.getSolution(), "Should return null when asked for the solution when not initialized"),
+                () -> {
+                    solver.configure(MINIMIZATION_TEST_CASE.matrix, OptimizationType.MINIMIZE);
+                    solver.getNotificationHandler().addListener(1, (step, s) ->
+                            assertNull(s.getSolution(), "Should return null when asked for the solution while solving")
+                    );
+                    solver.solve();
+                }
+        );
+    }
+
+    @Test
+    void shouldReturnNullWhenAskedForTheMatrixWhileUnconfigured() {
+        AssignmentSolver solver = new AssignmentSolver();
+        assertNull(solver.getMatrix(), "Should return null when asked for the matrix if unconfigured");
+    }
+
     @TestFactory
     public Stream<DynamicTest> solveMinCorrectlyComputesOptimalAssignment() {
         return getTestCases(MINIMIZATION_TEST_CASES_FILE).stream().map(
@@ -318,8 +339,8 @@ class AssignmentSolverTest {
                         }
                     }
                     lineNumber++;
-                    long[] expectedSolution = Arrays.stream(scanner.nextLine().split("\\s+"))
-                            .mapToLong(Long::parseLong)
+                    int[] expectedSolution = Arrays.stream(scanner.nextLine().split("\\s+"))
+                            .mapToInt(Integer::parseInt)
                             .toArray();
                     if (expectedSolution.length != matrixSize) {
                         throw new IllegalStateException("%s : Not enough elements at line %d, expected %d".formatted(fileName, lineNumber, matrixSize));
@@ -338,7 +359,7 @@ class AssignmentSolverTest {
 
     record TestCase(
             long[][] matrix,
-            long[] expectedSolution,
+            int[] expectedSolution,
             long optimalValue
     ) {
     }
