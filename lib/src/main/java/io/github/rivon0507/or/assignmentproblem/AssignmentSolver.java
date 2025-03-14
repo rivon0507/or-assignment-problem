@@ -37,7 +37,7 @@ public class AssignmentSolver {
     private SolverState state = UNINITIALIZED;
     private long[][] matrix;
     private OptimizationType optimization;
-    private long[] solution = null;
+    private int[] solution = null;
     private long optimalValue = 0;
     private long ceiling = 0;
     private final Set<Integer> markedRows = new HashSet<>();
@@ -81,7 +81,7 @@ public class AssignmentSolver {
             notificationHandler.notify(LV2_SUBTRACT_ADD_MIN, this);
             notificationHandler.notify(LV1_FIND_SUBTRACT_ADD_MIN, this);
         }
-        solution = framedZeroes.stream().sorted(Comparator.comparing(Coord::row)).mapToLong(Coord::col).toArray();
+        solution = framedZeroes.stream().sorted(Comparator.comparing(Coord::row)).mapToInt(Coord::col).toArray();
         if (optimization == OptimizationType.MAXIMIZE) {
             optimalValue = matrix.length * ceiling - optimalValue;
         }
@@ -133,9 +133,9 @@ public class AssignmentSolver {
     /// This method ensures that modifications to the returned array do not
     /// affect the internal state of the solver.
     ///
-    /// @return a copy of the optimal assignment solution as a `long[]` array, or null if there is still no solution
+    /// @return a copy of the optimal assignment solution as a `int[]` array, or null if there is still no solution
     ///  (still solving or not configured)
-    public long[] getSolution() {
+    public int[] getSolution() {
         if (solution == null) return null;
         return Arrays.copyOf(solution, solution.length);
     }
