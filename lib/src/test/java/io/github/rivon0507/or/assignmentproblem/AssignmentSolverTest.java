@@ -260,6 +260,27 @@ class AssignmentSolverTest {
         assertThrows(UnsupportedOperationException.class, () -> colMinRows.add(0), "ColMinRows should not be modifiable");
     }
 
+    @Test
+    void shouldReturnNullWhenAskedForSolutionWhileStillSolving() {
+        AssignmentSolver solver = new AssignmentSolver();
+        assertAll(
+                () -> assertNull(solver.getSolution(), "Should return null when asked for the solution when not initialized"),
+                () -> {
+                    solver.configure(MINIMIZATION_TEST_CASE.matrix, OptimizationType.MINIMIZE);
+                    solver.getNotificationHandler().addListener(1, (step, s) ->
+                            assertNull(s.getSolution(), "Should return null when asked for the solution while solving")
+                    );
+                    solver.solve();
+                }
+        );
+    }
+
+    @Test
+    void shouldReturnNullWhenAskedForTheMatrixWhileUnconfigured() {
+        AssignmentSolver solver = new AssignmentSolver();
+        assertNull(solver.getMatrix(), "Should return null when asked for the matrix if unconfigured");
+    }
+
     @TestFactory
     public Stream<DynamicTest> solveMinCorrectlyComputesOptimalAssignment() {
         return getTestCases(MINIMIZATION_TEST_CASES_FILE).stream().map(
